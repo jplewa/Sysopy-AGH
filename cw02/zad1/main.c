@@ -3,8 +3,12 @@
 #define RECORD_SIZE 100
 
 
-int main(int argc, char* argv){
+void generate (FILE* filename, int n){
     
+}
+
+int main(int argc, char* argv){
+
 
 
 }
