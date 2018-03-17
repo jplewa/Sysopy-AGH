@@ -73,13 +73,37 @@ tests:
 	echo -n "       | Library sort |" >> wyniki.txt
 	./program sort data_lib 1000 4096 lib >> wyniki.txt
 
-	./program generate data_sys 2000 4096
-	echo "  3.2. 2000 records" >> wyniki.txt
+	./program generate data_sys 10000 4096
+	echo "  3.2. 10000 records" >> wyniki.txt
 	echo -n "       | System copy  |" >> wyniki.txt 
-	./program copy data_sys data_lib 2000 4096 sys >> wyniki.txt
+	./program copy data_sys data_lib 10000 4096 sys >> wyniki.txt
 	echo -n "       | Library copy |" >> wyniki.txt
-	./program copy data_sys data_lib 2000 4096 lib >> wyniki.txt
+	./program copy data_sys data_lib 10000 4096 lib >> wyniki.txt
 	echo -n "       | System sort  |" >> wyniki.txt
-	./program sort data_sys 2000 4096 sys >> wyniki.txt
+	./program sort data_sys 10000 4096 sys >> wyniki.txt
 	echo -n "       | Library sort |" >> wyniki.txt
-	./program sort data_lib 2000 4096 lib >> wyniki.txt
+	./program sort data_lib 10000 4096 lib >> wyniki.txt
+
+	echo "" >> wyniki.txt
+	echo "4. RECORD SIZE = 8192" >> wyniki.txt
+	./program generate data_sys 1000 8192
+	echo "  4.1. 1000 records" >> wyniki.txt
+	echo -n "       | System copy  |" >> wyniki.txt 
+	./program copy data_sys data_lib 1000 8192 sys >> wyniki.txt
+	echo -n "       | Library copy |" >> wyniki.txt
+	./program copy data_sys data_lib 1000 8192 lib >> wyniki.txt
+	echo -n "       | System sort  |" >> wyniki.txt
+	./program sort data_sys 1000 8192 sys >> wyniki.txt
+	echo -n "       | Library sort |" >> wyniki.txt
+	./program sort data_lib 1000 8192 lib >> wyniki.txt
+
+	./program generate data_sys 10000 8192
+	echo "  4.2. 10000 records" >> wyniki.txt
+	echo -n "       | System copy  |" >> wyniki.txt 
+	./program copy data_sys data_lib 10000 8192 sys >> wyniki.txt
+	echo -n "       | Library copy |" >> wyniki.txt
+	./program copy data_sys data_lib 10000 8192 lib >> wyniki.txt
+	echo -n "       | System sort  |" >> wyniki.txt
+	./program sort data_sys 10000 8192 sys >> wyniki.txt
+	echo -n "       | Library sort |" >> wyniki.txt
+	./program sort data_lib 10000 8192 lib >> wyniki.txt
