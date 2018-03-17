@@ -12,16 +12,16 @@
 #include <sys/times.h>
 
 struct full_time{
-    __clock_t real_time;
+    //__clock_t real_time;
     __clock_t user_time;
     __clock_t system_time;
 } typedef full_time;
 
 full_time time_stamp(){
     full_time time_stamp;
-    struct timespec time_r;
-    clock_gettime(CLOCK_REALTIME, &time_r);
-    time_stamp.real_time = time_r.tv_nsec + time_r.tv_sec * 1000000000;
+    //struct timespec time_r;
+    //clock_gettime(CLOCK_REALTIME, &time_r);
+    //time_stamp.real_time = time_r.tv_nsec + time_r.tv_sec * 1000000000;
     struct tms time_s_u;
     times(&time_s_u);
     time_stamp.system_time = time_s_u.tms_stime;
@@ -29,8 +29,9 @@ full_time time_stamp(){
     return  time_stamp;
 }
 void time_output(full_time start, full_time end){
-    printf(" real time: %f\n user time: %f\n system time: %f\n", 
-        (float)(end.real_time - start.real_time) / 1000000000.0, 
+    //printf(" real time: %f\n user time: %f\n system time: %f\n", 
+        //(float)(end.real_time - start.real_time) / 1000000000.0, 
+    printf("\tuser time: %9.6f\t| system time: %9.6f |\n", 
         (float) (end.user_time - start.user_time) / (float) sysconf(_SC_CLK_TCK), 
         (float)(end.system_time - start.system_time) / (float) sysconf(_SC_CLK_TCK));
 }
@@ -46,6 +47,7 @@ void generate (char* filename, int size, int record_size){
     fclose(file);
 }
 void sys_sort(char* filename, int size, int record_size){
+    full_time start = time_stamp();
     int file = open(filename,O_RDWR|S_IRUSR|S_IWUSR);
     char* key = malloc(record_size);
     char* tmp = malloc(record_size);
@@ -66,28 +68,33 @@ void sys_sort(char* filename, int size, int record_size){
         write(file, key, record_size);
     }
     close(file);
+    full_time end = time_stamp();
+    time_output(start, end);
 }
 void lib_sort(char* filename, int size, int record_size){
+    full_time start = time_stamp();
     FILE* file = fopen(filename, "w");
     char* key = malloc(record_size);
     char* tmp = malloc(record_size);
     for (int i = 1; i < size; i++){
         fseek (file, (i*record_size), 0);
-        fread(file, key, 1, record_size);
+        fread(&key, 1, record_size, file);
         int j = i - 1;
         fseek (file, (j*record_size), 0);
-        fread(file, tmp, 1, record_size);
+        fread(&tmp, 1, record_size, file);
         while (j >= 0 && tmp[0] > key[0]){
             fseek (file, ((j+1)*record_size), 0);
-            fwrite(file, tmp, 1, record_size);
+            fwrite(&tmp, 1, record_size, file);
             j--;
             fseek (file, (j*record_size), 0);
-            fread(file, tmp, 1, record_size);
+            fread(&tmp, 1, record_size, file);
         }
         fseek (file, (j+1)*record_size, 0);
-        fwrite(file, key, 1, record_size);
+        fwrite(&key, 1, record_size, file);
     }
     fclose(file);
+    full_time end = time_stamp();
+    time_output(start, end);
 }
 void sys_copy(char* filename1, char* filename2, int size, int record_size){
     int in_file = open(filename1, O_RDONLY);
