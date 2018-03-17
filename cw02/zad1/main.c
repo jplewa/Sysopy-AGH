@@ -34,17 +34,16 @@ void time_output(full_time start, full_time end){
         (float) (end.user_time - start.user_time) / (float) sysconf(_SC_CLK_TCK), 
         (float)(end.system_time - start.system_time) / (float) sysconf(_SC_CLK_TCK));
 }
-
 void generate (char* filename, int size, int record_size){
     const char* mode = "w";
     FILE* file =  fopen(filename, mode);
     for (int i = 0; i < size; i++){
-        for (int j = 0; j < record_size - 1; j++){
-            char c = (char)(' ' + rand()%58);
+        for (int j = 0; j < record_size; j++){
+            char c = (char)('!' + rand()%58);
             fwrite(&c, 1, 1, file);
         }
-        char c = (char) 10;
-        fwrite(&c, 1, 1, file);
+        //char c = (char) 10;
+        //fwrite(&c, 1, 1, file);
     }
     fclose(file);
 }
@@ -59,19 +58,33 @@ void sys_copy(char* filename1, char* filename2, int size, int record_size){
     int out_file = open(filename2,O_WRONLY|O_CREAT,S_IRUSR|S_IWUSR);
     int bytes_count = 0;
     int count = 0;
-    int* buffer = malloc(record_size);
+    char* buffer = malloc(record_size);
     full_time start = time_stamp();
     while((bytes_count = read(in_file, buffer, record_size)) > 0 && count < size){
         write(out_file, buffer, bytes_count);
+        //char c = '\n';
+        //write(out_file, &c, 1);
         count++;
     }
     full_time end = time_stamp();
     time_output(start, end);
 }
-void lib_copy(){
-
+void lib_copy(char* filename1, char* filename2, int size, int record_size){
+    FILE* in_file = fopen(filename1, "r");
+    FILE* out_file = fopen(filename2, "w");
+    char* buffer = malloc(record_size);
+    int bytes_count = 0;
+    int count = 0;
+    full_time start = time_stamp();
+    while (0 < (bytes_count = fread(buffer, 1, record_size, in_file)) && count < size){
+        fwrite(buffer, 1, bytes_count, out_file);
+        count++;
+    }
+    full_time end = time_stamp();
+    time_output(start, end);
+    fclose(in_file);
+    fclose(out_file);
 }
-
 void parse(int argc, char* argv[]){
     if (argc < 5) return;
     char * pEnd;
@@ -86,11 +99,10 @@ void parse(int argc, char* argv[]){
         int record_size = (int) strtol(argv[5],&pEnd,10);
         if (size == 0 || record_size == 0) return;
         else if(strncmp(argv[6], "sys", 3) == 0) sys_copy(argv[2], argv[3], size, record_size);
+        else if(strncmp(argv[6], "lib", 3) == 0) lib_copy(argv[2], argv[3], size, record_size);
     }
 
 }
-
-
 int main(int argc, char* argv[]){
     parse(argc, argv);
 }
