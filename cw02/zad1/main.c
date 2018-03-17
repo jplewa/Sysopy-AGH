@@ -42,16 +42,52 @@ void generate (char* filename, int size, int record_size){
             char c = (char)('!' + rand()%58);
             fwrite(&c, 1, 1, file);
         }
-        //char c = (char) 10;
-        //fwrite(&c, 1, 1, file);
     }
     fclose(file);
 }
-void sys_sort (){
-
+void sys_sort(char* filename, int size, int record_size){
+    int file = open(filename,O_RDWR|S_IRUSR|S_IWUSR);
+    char* key = malloc(record_size);
+    char* tmp = malloc(record_size);
+    for (int i = 1; i < size; i++){
+        lseek (file, (i*record_size), 0);
+        read(file, key, record_size);
+        int j = i - 1;
+        lseek (file, (j*record_size), 0);
+        read(file, tmp, record_size);
+        while (j >= 0 && tmp[0] > key[0]){
+            lseek (file, ((j+1)*record_size), 0);
+            write(file, tmp, record_size);
+            j--;
+            lseek (file, (j*record_size), 0);
+            read(file, tmp, record_size);
+        }
+        lseek (file, (j+1)*record_size, 0);
+        write(file, key, record_size);
+    }
+    close(file);
 }
-void lib_sort(){
-
+void lib_sort(char* filename, int size, int record_size){
+    FILE* file = fopen(filename, "w");
+    char* key = malloc(record_size);
+    char* tmp = malloc(record_size);
+    for (int i = 1; i < size; i++){
+        fseek (file, (i*record_size), 0);
+        fread(file, key, 1, record_size);
+        int j = i - 1;
+        fseek (file, (j*record_size), 0);
+        fread(file, tmp, 1, record_size);
+        while (j >= 0 && tmp[0] > key[0]){
+            fseek (file, ((j+1)*record_size), 0);
+            fwrite(file, tmp, 1, record_size);
+            j--;
+            fseek (file, (j*record_size), 0);
+            fread(file, tmp, 1, record_size);
+        }
+        fseek (file, (j+1)*record_size, 0);
+        fwrite(file, key, 1, record_size);
+    }
+    fclose(file);
 }
 void sys_copy(char* filename1, char* filename2, int size, int record_size){
     int in_file = open(filename1, O_RDONLY);
@@ -62,8 +98,6 @@ void sys_copy(char* filename1, char* filename2, int size, int record_size){
     full_time start = time_stamp();
     while((bytes_count = read(in_file, buffer, record_size)) > 0 && count < size){
         write(out_file, buffer, bytes_count);
-        //char c = '\n';
-        //write(out_file, &c, 1);
         count++;
     }
     full_time end = time_stamp();
@@ -101,7 +135,13 @@ void parse(int argc, char* argv[]){
         else if(strncmp(argv[6], "sys", 3) == 0) sys_copy(argv[2], argv[3], size, record_size);
         else if(strncmp(argv[6], "lib", 3) == 0) lib_copy(argv[2], argv[3], size, record_size);
     }
-
+    else if(strncmp(argv[1], "sort", 4) == 0){
+        int size = (int) strtol(argv[3],&pEnd,10);
+        int record_size = (int) strtol(argv[4],&pEnd,10);
+        if (size == 0 || record_size == 0) return;
+        else if(strncmp(argv[5], "sys", 3) == 0) sys_sort(argv[2], size, record_size);
+        else if(strncmp(argv[5], "lib", 3) == 0) lib_sort(argv[2], size, record_size);
+    }
 }
 int main(int argc, char* argv[]){
     parse(argc, argv);

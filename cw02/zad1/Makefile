@@ -15,4 +15,6 @@ tests:
 	./program generate dane 1000 512
 	./program copy dane dane2 1000 500 lib
 	./program copy dane dane3 1000 500 sys
+	./program sort plik 10 1 sys
+	./program sort plik2 20 1 sys
 
