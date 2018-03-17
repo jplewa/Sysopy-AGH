@@ -1,0 +1,1 @@
+Po dodaniu opcji -O można było zauważyć poprawę przy wielu testach. W przypadku testów uruchomionych na moim komputerze szczególnie widoczna była zwiększona szybkość przy opcji -Os.

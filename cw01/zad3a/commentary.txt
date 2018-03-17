@@ -1,0 +1,1 @@
+Czasy wykonywania operacji są do siebie zbliżone. W większości przypadków czas okazuje się nieco krótszy przy ładowaniu biblioteki statycznie.

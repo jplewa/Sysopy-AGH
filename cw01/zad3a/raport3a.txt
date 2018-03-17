@@ -1,0 +1,145 @@
+----------------------------------------------
+                STATIC LIBRARY
+----------------------------------------------
+STATIC ALLOCATION
+----------------------------------------------
+CREATE ARRAY: 
+ real time: 0.000004
+ user time: 0.000000
+ system time: 0.000000
+ADD 50000 BLOCKS: 
+ real time: 4.285944
+ user time: 4.270000
+ system time: 0.010000
+REMOVE 50000 BLOCKS: 
+ real time: 0.313914
+ user time: 0.320000
+ system time: 0.000000
+REMOVE AND ADD 50000 TIMES: 
+ real time: 4.542079
+ user time: 4.540000
+ system time: 0.000000
+SEARCH: 
+ real time: 0.000322
+ user time: 0.000000
+ system time: 0.000000
+----------------------------------------------
+DYNAMIC ALLOCATION
+----------------------------------------------
+CREATE ARRAY: 
+ real time: 0.000013
+ user time: 0.000000
+ system time: 0.000000
+ADD 50000 BLOCKS: 
+ real time: 4.303434
+ user time: 4.300000
+ system time: 0.000000
+REMOVE 50000 BLOCKS: 
+ real time: 0.002662
+ user time: 0.000000
+ system time: 0.000000
+REMOVE AND ADD 50000 TIMES: 
+ real time: 4.274341
+ user time: 4.280000
+ system time: 0.000000
+SEARCH: 
+ real time: 0.000104
+ user time: 0.000000
+ system time: 0.000000
+----------------------------------------------
+                SHARED LIBRARY
+----------------------------------------------
+STATIC ALLOCATION
+----------------------------------------------
+CREATE ARRAY: 
+ real time: 0.000005
+ user time: 0.000000
+ system time: 0.000000
+ADD 50000 BLOCKS: 
+ real time: 4.234121
+ user time: 4.230000
+ system time: 0.000000
+REMOVE 50000 BLOCKS: 
+ real time: 0.310739
+ user time: 0.310000
+ system time: 0.000000
+REMOVE AND ADD 50000 TIMES: 
+ real time: 4.572571
+ user time: 4.580000
+ system time: 0.000000
+SEARCH: 
+ real time: 0.000326
+ user time: 0.000000
+ system time: 0.000000
+----------------------------------------------
+DYNAMIC ALLOCATION
+----------------------------------------------
+CREATE ARRAY: 
+ real time: 0.000012
+ user time: 0.000000
+ system time: 0.000000
+ADD 50000 BLOCKS: 
+ real time: 4.676785
+ user time: 4.680000
+ system time: 0.000000
+REMOVE 50000 BLOCKS: 
+ real time: 0.002493
+ user time: 0.000000
+ system time: 0.000000
+REMOVE AND ADD 50000 TIMES: 
+ real time: 4.656432
+ user time: 4.650000
+ system time: 0.000000
+SEARCH: 
+ real time: 0.000100
+ user time: 0.000000
+ system time: 0.000000
+----------------------------------------------
+     SHARED LIBRARY (DYNAMICALLY LOADED)
+----------------------------------------------
+STATIC ALLOCATION
+----------------------------------------------
+CREATE ARRAY: 
+ real time: 0.000014
+ user time: 0.000000
+ system time: 0.000000
+ADD 50000 BLOCKS: 
+ real time: 4.244183
+ user time: 4.240000
+ system time: 0.010000
+REMOVE 50000 BLOCKS: 
+ real time: 0.310254
+ user time: 0.310000
+ system time: 0.000000
+REMOVE AND ADD 50000 TIMES: 
+ real time: 4.566410
+ user time: 4.560000
+ system time: 0.000000
+SEARCH: 
+ real time: 0.000319
+ user time: 0.000000
+ system time: 0.000000
+----------------------------------------------
+DYNAMIC ALLOCATION
+----------------------------------------------
+CREATE ARRAY: 
+ real time: 0.000012
+ user time: 0.000000
+ system time: 0.000000
+ADD 50000 BLOCKS: 
+ real time: 4.277702
+ user time: 4.270000
+ system time: 0.000000
+REMOVE 50000 BLOCKS: 
+ real time: 0.003024
+ user time: 0.000000
+ system time: 0.000000
+REMOVE AND ADD 50000 TIMES: 
+ real time: 4.665683
+ user time: 4.670000
+ system time: 0.000000
+SEARCH: 
+ real time: 0.000094
+ user time: 0.000000
+ system time: 0.000000
+

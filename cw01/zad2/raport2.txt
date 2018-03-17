@@ -1,0 +1,23 @@
+----------------------------------------------
+DYNAMIC ALLOCATION
+----------------------------------------------
+CREATE ARRAY: 
+ real time: 0.000012
+ user time: 0.000000
+ system time: 0.000000
+ADD 50000 BLOCKS: 
+ real time: 4.320938
+ user time: 4.310000
+ system time: 0.010000
+REMOVE 50000 BLOCKS: 
+ real time: 0.002697
+ user time: 0.010000
+ system time: 0.000000
+REMOVE AND ADD 10000 TIMES: 
+ real time: 0.854867
+ user time: 0.850000
+ system time: 0.000000
+SEARCH: 
+ real time: 0.000087
+ user time: 0.000000
+ system time: 0.000000
