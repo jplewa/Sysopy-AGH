@@ -10,4 +10,4 @@ clean:
 
 tests:
 	rm -f lista.txt
-	./program /home/julia/Obrazy/ '<' 2018-11-15 >> lista.txt
+	./program / '<' 2018-01-15 >> lista.txt
