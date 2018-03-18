@@ -51,7 +51,7 @@ void search_dirs (char* current_path, DIR* directory, int cmp, time_t date){
             }
         }
         else if (S_ISDIR(path_stat -> st_mode)){
-            if (strncmp(current -> d_name, ".",  1) != 0 && strncmp(current -> d_name, "..",  2) != 0){
+            if (strncmp(current -> d_name, ".",  strlen(current -> d_name)) != 0 && strncmp(current -> d_name, "..",  2) != 0){
                 strcat(new_str, "/");
                 DIR* next_directory = opendir(new_str);
                 if (next_directory != NULL){
@@ -85,30 +85,11 @@ void parse(int argc, char* argv[]){
     if (directory == NULL) return;
     char* full_path = calloc(1024, 1);
     full_path[0] = '\0';
-    if (argv[1][0] != '/' && argv[1][0] != '.'){
-        char* cwd = getcwd(NULL, 0);
-        strcat(full_path, cwd);
-        strcat(full_path, "/");
-        strcat(full_path, argv[1]);
-    }
-    else if (argv[1][0] == '.' && argv[1][1] == '.'){
-        chdir("..");
-        char* cwd = getcwd(NULL, 0);
-        char* path = malloc(strlen(argv[1]) - 2);
-        for (int i = 0; i < strlen(argv[1])-2; i++) path[i] = argv[1][i+2];    
-        strcat(full_path, cwd);
-        strcat(full_path, path);
-    }
-    else if (argv[1][0] == '.' && argv[1][1] == '/'){
-        char* cwd = getcwd(NULL, 0);
-        char* path = malloc(strlen(argv[1]) - 1);
-        for (int i = 0; i < strlen(argv[1])-2; i++) path[i] = argv[1][i+2];    
-        strcat(full_path, cwd);
-        strcat(full_path, "/");
-        strcat(full_path, path);
-    }
-    else strcat(full_path, argv[1]);
-    if (full_path[strlen(full_path)-1] != '/') strcat(full_path, "/");
+    chdir(argv[1]);
+    char* cwd = getcwd(NULL, 0);
+    strcat(full_path, cwd);
+    strcat(full_path, "/");
+
     int cmp = ((int) argv[2][0]) - 61;
     if (abs(cmp) > 1){
         printf("ups\n");
@@ -119,7 +100,7 @@ void parse(int argc, char* argv[]){
     time_t date = mktime(tm);
     search_dirs(full_path, directory, cmp, date);
     printf("\n");
-    search_dirs_nftw(argv[1], cmp, date);
+    search_dirs_nftw(full_path, cmp, date);
 }
 int main(int argc, char* argv[]){
     parse(argc, argv);
