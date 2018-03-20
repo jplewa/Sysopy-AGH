@@ -73,24 +73,27 @@ void sys_sort(char* filename, int size, int record_size){
 }
 void lib_sort(char* filename, int size, int record_size){
     full_time start = time_stamp();
-    FILE* file = fopen(filename, "w");
-    char* key = malloc(record_size);
-    char* tmp = malloc(record_size);
+    FILE* file = fopen(filename, "r+");
+    char* key = calloc(record_size, 1);
+    char* tmp = calloc(record_size, 1);
     for (int i = 1; i < size; i++){
         fseek (file, (i*record_size), 0);
-        fread(&key, 1, record_size, file);
+        fread(key, 1, record_size, file);
+        printf("%s\n", key);
         int j = i - 1;
         fseek (file, (j*record_size), 0);
-        fread(&tmp, 1, record_size, file);
+        fread(tmp, 1, record_size, file);
+        printf(" %s\n", tmp);
         while (j >= 0 && tmp[0] > key[0]){
             fseek (file, ((j+1)*record_size), 0);
-            fwrite(&tmp, 1, record_size, file);
+            fwrite(tmp, 1, record_size, file);
             j--;
             fseek (file, (j*record_size), 0);
-            fread(&tmp, 1, record_size, file);
+            fread(tmp, 1, record_size, file);
+            
         }
         fseek (file, (j+1)*record_size, 0);
-        fwrite(&key, 1, record_size, file);
+        fwrite(key, 1, record_size, file);
     }
     fclose(file);
     full_time end = time_stamp();
