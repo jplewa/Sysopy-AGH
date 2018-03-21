@@ -92,12 +92,11 @@ void search_dirs(char* current_path, DIR* directory, int cmp, time_t date){
                 if (lstat(new_name, path_stat) == 0){
                     if (S_ISREG(path_stat -> st_mode)){
                         if (time_equal(date, path_stat -> st_mtime, cmp)){
-                            printf("%s%s\n%10ld\t%s", node -> full_path, current -> d_name, (long) path_stat -> st_size, permissions(path_stat));
                             char buff[20]; 
                             struct tm * timeinfo;
                             timeinfo = localtime (&(path_stat -> st_mtime)); 
                             strftime(buff, 20, "%Y-%m-%d %H:%M:%S", timeinfo); 
-                            printf("\t%s\n",buff);
+                            printf("%s\t%8ld\t%s\t\t%s%s\n", permissions(path_stat), (long) path_stat -> st_size, buff, node -> full_path, current -> d_name);
                         }
                     }
                     else if (S_ISDIR(path_stat -> st_mode)){
@@ -117,12 +116,11 @@ void search_dirs_nftw (char* directory, int cmp, time_t date){
     flags |= FTW_PHYS;
     int fn (const char* file_path, const struct stat* path_stat, int flag, struct FTW* ftw) {
         if (S_ISREG(path_stat -> st_mode) && time_equal(date, path_stat -> st_mtime, cmp)){
-            printf("%s\n%10ld\t%s", file_path, (long) path_stat -> st_size, permissions(path_stat));
             char buff[20]; 
             struct tm * timeinfo;
             timeinfo = localtime (&(path_stat -> st_mtime)); 
-            strftime(buff, 20, "%Y-%m-%d %H:%M:%S", timeinfo); 
-            printf("\t%s\n",buff);
+            strftime(buff, 20, "%Y-%m-%d %H:%M:%S", timeinfo);
+            printf("%s\t%8ld\t%s\t\t%s\n",  permissions(path_stat), (long) path_stat -> st_size, buff, file_path); 
         }
         return 0;
     };
