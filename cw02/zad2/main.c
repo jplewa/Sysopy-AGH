@@ -57,7 +57,6 @@ bool DIR_queue_is_empty(DIR_queue* queue){
     return (queue -> head -> next == NULL);
 }
 
-
 char* permissions(const struct stat* path_stat){
     char* result = malloc(11);
     result = strncpy(result, "----------\0", 11);
@@ -119,43 +118,10 @@ void search_dirs(char* current_path, DIR* directory, int cmp, time_t date){
         }
     }
 }
-/*
-void search_dirs (char* current_path, DIR* directory, int cmp, time_t date){
-    struct dirent* current = readdir(directory);
-    if (current == NULL) return;
-    struct stat* path_stat = malloc(sizeof(struct stat));
-    char* new_str = malloc(strlen(current_path) + strlen(current -> d_name) + 2);
-    new_str[0] = '\0';
-    strcat(new_str, current_path);
-    strcat(new_str,current -> d_name);
-    if (lstat(new_str, path_stat) == 0){
-        if (S_ISREG(path_stat -> st_mode)){
-            if (time_equal(date, path_stat -> st_mtime, cmp)){
-                printf("%s%s\n%10ld\t%s", current_path, current -> d_name, (long) path_stat -> st_size, permissions(path_stat));
-                char buff[20]; 
-                struct tm * timeinfo;
-                timeinfo = localtime (&(path_stat -> st_mtime)); 
-                strftime(buff, 20, "%Y-%m-%d %H:%M:%S", timeinfo); 
-                printf("\t%s\n",buff);
-            }
-        }
-        else if (S_ISDIR(path_stat -> st_mode)){
-            if (strncmp(current -> d_name, ".",  strlen(current -> d_name)) != 0 && strncmp(current -> d_name, "..",  2) != 0){
-                if (strncmp(current -> d_name, "/",  strlen(current -> d_name)) != 0) strcat(new_str, "/");
-                DIR* next_directory = opendir(new_str);
-                if (next_directory != NULL){
-                    search_dirs(new_str, next_directory, cmp, date);
-                }
-            }
-        }
-    }
-    search_dirs(current_path, directory, cmp, date);
-}
-*/
+
 void search_dirs_nftw (char* directory, int cmp, time_t date){
     int flags = 0;
     flags |= FTW_PHYS;
-    //flags |= FTW_MOUNT;
     int fn (const char* file_path, const struct stat* path_stat, int flag, struct FTW* ftw) {
         if (S_ISREG(path_stat -> st_mode) && time_equal(date, path_stat -> st_mtime, cmp)){
             printf("%s\n%10ld\t%s", file_path, (long) path_stat -> st_size, permissions(path_stat));

@@ -12,16 +12,12 @@
 #include <sys/times.h>
 
 struct full_time{
-    //__clock_t real_time;
     __clock_t user_time;
     __clock_t system_time;
 } typedef full_time;
 
 full_time time_stamp(){
     full_time time_stamp;
-    //struct timespec time_r;
-    //clock_gettime(CLOCK_REALTIME, &time_r);
-    //time_stamp.real_time = time_r.tv_nsec + time_r.tv_sec * 1000000000;
     struct tms time_s_u;
     times(&time_s_u);
     time_stamp.system_time = time_s_u.tms_stime;
@@ -29,8 +25,6 @@ full_time time_stamp(){
     return  time_stamp;
 }
 void time_output(full_time start, full_time end){
-    //printf(" real time: %f\n user time: %f\n system time: %f\n", 
-        //(float)(end.real_time - start.real_time) / 1000000000.0, 
     printf("\tuser time: %9.6f\t| system time: %9.6f |\n", 
         (float) (end.user_time - start.user_time) / (float) sysconf(_SC_CLK_TCK), 
         (float)(end.system_time - start.system_time) / (float) sysconf(_SC_CLK_TCK));
@@ -79,11 +73,9 @@ void lib_sort(char* filename, int size, int record_size){
     for (int i = 1; i < size; i++){
         fseek (file, (i*record_size), 0);
         fread(key, 1, record_size, file);
-        printf("%s\n", key);
         int j = i - 1;
         fseek (file, (j*record_size), 0);
         fread(tmp, 1, record_size, file);
-        printf(" %s\n", tmp);
         while (j >= 0 && tmp[0] > key[0]){
             fseek (file, ((j+1)*record_size), 0);
             fwrite(tmp, 1, record_size, file);
