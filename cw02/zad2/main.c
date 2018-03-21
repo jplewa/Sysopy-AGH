@@ -19,7 +19,6 @@ struct DIR_node{
   char* full_path;
   DIR_node* next;
 };
-
 struct DIR_queue{
   DIR_node* head;
   DIR_node* tail;
@@ -34,7 +33,6 @@ DIR_queue* new_queue(){
   queue -> tail = dummy;
   return queue;
 }
-
 void DIR_enqueue(DIR_queue* queue, char* full_path){
     DIR_node* new_node = malloc(sizeof(DIR_node));
     new_node -> full_path = full_path;
@@ -42,7 +40,6 @@ void DIR_enqueue(DIR_queue* queue, char* full_path){
     (queue -> tail) -> next = new_node;
     queue -> tail = new_node;
 }
-
 DIR_node* DIR_dequeue(DIR_queue* queue){
     DIR_node* tmp = queue -> head -> next;
     if (tmp != NULL){
@@ -52,11 +49,9 @@ DIR_node* DIR_dequeue(DIR_queue* queue){
     }
     return tmp;
 }
-
 bool DIR_queue_is_empty(DIR_queue* queue){
     return (queue -> head -> next == NULL);
 }
-
 char* permissions(const struct stat* path_stat){
     char* result = malloc(11);
     result = strncpy(result, "----------\0", 11);
@@ -76,7 +71,6 @@ bool time_equal(time_t requested, time_t file, int cmp){
     if (cmp != 0 && ((difftime(file, requested)*cmp) > 0) && (time_equal(requested, file, 0) == false)) return true;
     else return false; 
 }
-
 void search_dirs(char* current_path, DIR* directory, int cmp, time_t date){
     closedir(directory);
     
@@ -118,7 +112,6 @@ void search_dirs(char* current_path, DIR* directory, int cmp, time_t date){
         }
     }
 }
-
 void search_dirs_nftw (char* directory, int cmp, time_t date){
     int flags = 0;
     flags |= FTW_PHYS;
