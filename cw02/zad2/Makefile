@@ -11,5 +11,5 @@ clean:
 tests:
 	rm -f lista.txt
 	rm -f lista2.txt
-	./program / '<' 2017-01-15 >> lista.txt
-	./program / '<' 2017-01-15 nftw >> lista2.txt
+	./program / '<' 2018-03-15 >> lista.txt
+	./program / '<' 2018-03-15 nftw >> lista2.txt

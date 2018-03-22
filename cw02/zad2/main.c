@@ -6,11 +6,11 @@
 #include <time.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <ftw.h>
 #include <unistd.h>
 #include <string.h>
 #include <errno.h>
 #include <stdbool.h>
-#include <ftw.h>
 
 typedef struct DIR_node DIR_node;
 typedef struct DIR_queue DIR_queue;
@@ -23,7 +23,6 @@ struct DIR_queue{
   DIR_node* head;
   DIR_node* tail;
 };
-
 DIR_queue* new_queue(){
   DIR_queue* queue = malloc(sizeof(DIR_queue));
   DIR_node* dummy = malloc(sizeof(DIR_node));
@@ -67,25 +66,29 @@ char* permissions(const struct stat* path_stat){
     return result;
 }
 bool time_equal(time_t requested, time_t file, int cmp){
-    if (cmp == 0 && (int)difftime(file, requested)/86400 == 0) return true;
-    if (cmp != 0 && ((difftime(file, requested)*cmp) > 0) && (time_equal(requested, file, 0) == false)) return true;
+    struct tm* file_d = malloc(sizeof(struct tm));
+    memcpy (file_d, localtime(&file), sizeof(struct tm));
+    struct tm* file_r = malloc(sizeof(struct tm));
+    memcpy (file_r, localtime(&requested), sizeof(struct tm));
+    if (cmp == 0 && (file_d -> tm_year) == (file_r -> tm_year) && (file_d -> tm_mon) == (file_r -> tm_mon) && (file_d -> tm_mday) == (file_r -> tm_mday)) return true;
+    if (cmp != 0 && ((difftime(file, requested)*cmp) > 0) && !(time_equal(requested, file, 0))) return true;
     else return false; 
 }
 void search_dirs(char* current_path, DIR* directory, int cmp, time_t date){
-    closedir(directory);
-    
     DIR_queue* queue = new_queue();
     DIR_enqueue(queue, current_path);
     DIR_node* node = malloc(sizeof(DIR_node));
     struct dirent* current = malloc(sizeof(struct dirent));
     struct stat* path_stat = malloc(sizeof(struct stat));
+    char* new_name;
+    DIR* new_directory;
 
     while(!DIR_queue_is_empty(queue)){
         node = DIR_dequeue(queue);
-        DIR* new_directory = opendir(node -> full_path);
+        new_directory = opendir(node -> full_path);
         if (new_directory != NULL){
             while((current = readdir(new_directory)) != NULL){
-                char* new_name = malloc(strlen(node -> full_path) + strlen(current -> d_name) + 2);
+                new_name = malloc(strlen(node -> full_path) + strlen(current -> d_name) + 2);
                 new_name[0] = '\0';
                 strcat(new_name, node -> full_path);
                 strcat(new_name, current -> d_name);
@@ -107,9 +110,18 @@ void search_dirs(char* current_path, DIR* directory, int cmp, time_t date){
                     }
                 }
             }
-            closedir(new_directory);
+            if (closedir(new_directory) != 0){
+                printf("Error: a problem occured while closing directory %s.\n", node -> full_path);
+            }
         }
     }
+    free(new_name);
+    free(directory);
+    free(queue -> head);
+    free(queue);
+    free(node);
+    free(current);
+    free(path_stat);
 }
 void search_dirs_nftw (char* directory, int cmp, time_t date){
     int flags = 0;
@@ -124,12 +136,28 @@ void search_dirs_nftw (char* directory, int cmp, time_t date){
         }
         return 0;
     };
-    nftw(directory, fn, 20, flags);
+    if (nftw(directory, fn, 20, flags) != 0){
+        printf("Error: a problem occured while accessing %s.\n", directory);
+        return;
+    }
 }
 void parse(int argc, char* argv[]){
-    if (argc < 4) return;
+    if (argc < 4){
+        printf("Incorrect arguments!\n");
+        printf("Please provide the following: [folder] [comparison type] [yyyy-mm-dd] [mode].\n");
+        printf("Comparison options: '<' '=' '>'.\n");
+        printf("Additional mode option availavle: nfts.\n");
+        return;
+    }
     DIR* directory = opendir(argv[1]);
-    if (directory == NULL) return;
+    if (directory == NULL){
+        printf("Error: a problem occured while trying to access directory %s.\n", argv[1]);
+        return;
+    }
+    if (closedir(directory) != 0){
+        printf("Error: a problem occured while trying to access directory %s.\n", argv[1]);
+        return;
+    }
     char* full_path = calloc(1024, 1);
     full_path[0] = '\0';
     chdir(argv[1]);
@@ -138,12 +166,18 @@ void parse(int argc, char* argv[]){
     if (strncmp(full_path, "/",  strlen(full_path)) != 0) strcat(full_path, "/");
     int cmp = ((int) argv[2][0]) - 61;
     if (abs(cmp) > 1){
-        printf("ups\n");
+        printf("Incorrect arguments!\n");
+        printf("Available comparison types: '<' '=' '>'.\n");
         return;
     }
     struct tm* tm = malloc(sizeof(struct tm));
-    if (strptime(argv[3], "%Y-%m-%d", tm) == NULL) return;
+    if (strptime(argv[3], "%Y-%m-%d", tm) == NULL){
+        printf("Incorrect arguments!\n");
+        printf("Required date format: yyyy-mm-dd.\n");
+        return;
+    }
     time_t date = mktime(tm);
+    free(tm);
     if(argc >= 5 && strncmp(argv[4], "nftw", 4) == 0) search_dirs_nftw(full_path, cmp, date);
     else search_dirs(full_path, directory, cmp, date);  
 }

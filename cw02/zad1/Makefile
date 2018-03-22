@@ -50,7 +50,7 @@ tests:
 	./program sort data_lib 2000 512 lib >> wyniki.txt
 
 	./program generate data_sys 5000 512
-	echo "  1.2. 5000 records" >> wyniki.txt
+	echo "  2.2. 5000 records" >> wyniki.txt
 	echo -n "       | System copy  |" >> wyniki.txt 
 	./program copy data_sys data_lib 5000 512 sys >> wyniki.txt
 	echo -n "       | Library copy |" >> wyniki.txt
