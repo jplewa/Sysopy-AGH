@@ -50,20 +50,8 @@ void search_dirs(char* current_path, int cmp, time_t date){
                 new_name[0] = '\0';
                 strcat(new_name, current_path);
                 strcat(new_name, current -> d_name);
-
                 if (lstat(new_name, path_stat) == 0){
-                    if (S_ISDIR(path_stat -> st_mode)){
-                        if (strncmp(current -> d_name, "/",  strlen(current -> d_name)) != 0) strcat(new_name, "/");
-                        int pid;
-                        pid = fork();
-
-                        if (pid == 0){
-                            search_dirs(new_name, cmp, date);
-                            return;
-                        }
-                        //wait(NULL);
-                    }
-                    else if (S_ISREG(path_stat -> st_mode)){
+                    if (S_ISREG(path_stat -> st_mode)){
                         if (time_equal(date, path_stat -> st_mtime, cmp)){
                             char buff[20]; 
                             struct tm * timeinfo;
@@ -71,21 +59,29 @@ void search_dirs(char* current_path, int cmp, time_t date){
                             strftime(buff, 20, "%Y-%m-%d %H:%M:%S", timeinfo); 
                             printf("%s\t%8ld\t%s\t\t%s%s\n", permissions(path_stat), (long) path_stat -> st_size, buff, current_path, current -> d_name);
                             fflush(stdout);
-
                         }
                     }
-
-
+                    else if(S_ISDIR(path_stat -> st_mode)){
+                        if (strncmp(current -> d_name, "/",  strlen(current -> d_name)) != 0) strcat(new_name, "/");
+                        int pid;
+                        pid = fork();
+                        if (pid == 0){
+                            search_dirs(new_name, cmp, date);
+                            exit(0);
+                        }
+                    }
                 }
             }
+            wait(NULL);
         }
         if (closedir(new_directory) != 0){
             printf("Error: a problem occured while closing directory %s.\n", current_path);
+            return;
         }
     }
-    //free(new_name);
     free(current);
     free(path_stat);
+    exit(0);
 }
 void search_dirs_nftw (char* directory, int cmp, time_t date){
     int flags = 0;
@@ -98,14 +94,9 @@ void search_dirs_nftw (char* directory, int cmp, time_t date){
             strftime(buff, 20, "%Y-%m-%d %H:%M:%S", timeinfo);
             printf("%s\t%8ld\t%s\t\t%s\n",  permissions(path_stat), (long) path_stat -> st_size, buff, file_path); 
         }
-        /*
-        if (S_ISDIR(path_stat -> st_mode)){
-            printf("%s\n", file_path);
-        }
-        */
         return 0;
     };
-    if (nftw(directory, fn, 20, flags) != 0){
+    if (nftw(directory, fn, 100, flags) != 0){
         printf("Error: a problem occured while accessing %s.\n", directory);
         return;
     }
@@ -154,5 +145,7 @@ void parse(int argc, char* argv[]){
 }
 
 int main(int argc, char* argv[]){
+    for (int i=0; i<argc; i++) printf("%s ", argv[i]);
+    printf("\n");
     parse(argc, argv);
 }
