@@ -50,12 +50,12 @@ int parse_file(char* file_name){
         if (pid == 0){
             if (setrlimit(RLIMIT_CPU, TIME_LIMIT) != 0) return -5;
             if (setrlimit(RLIMIT_AS, MEM_LIMIT) != 0) return -6;     
-            if (execvp(arguments[0], arguments) < 0) return line;
+            if (execvp(arguments[0], arguments) < 0) exit(2);
         }
         else if (pid > 0){       
             int status = 0;
             struct rusage* rusage = malloc(sizeof(struct rusage));
-            if (wait4(pid, &status, 0, rusage) == -1) return line;
+            if (wait4(pid, &status, 0, rusage) == -1) return -7;
             else{
                 if (WIFEXITED(status) && WEXITSTATUS(status) != 0){
                     return line;
@@ -68,7 +68,7 @@ int parse_file(char* file_name){
                 }   
             }
         }
-        else return -7;
+        else return -8;
     } 
     fclose(file);
     return 0;
@@ -76,7 +76,7 @@ int parse_file(char* file_name){
 
 void print_errors(int error_code){
     if (error_code > 0){
-        printf("Error executing command on line %d\n", error_code);
+        printf("Error executing command in line %d\n", error_code);
     }
     else{
         switch (error_code){
@@ -84,13 +84,12 @@ void print_errors(int error_code){
                 printf("Commands executed successfully\n");
                 break;
             case -1:
-                printf("Incorrect arguments\n");
+                printf("Error: Incorrect arguments\n");
                 printf("Please provide: [batch file name] [time limit (s)] [memory limit (MB)]\n");
                 break;
             case -2:
-                printf("Incorrect arguments\n");
-                printf("Requested batch file doesn't exist\n");
                 perror("Error");
+                printf("Requested batch file doesn't exist\n");
                 break;
             case -3:
                 printf("Incorrect argument: time_limit (s)\n");
@@ -107,7 +106,11 @@ void print_errors(int error_code){
                 printf("Error: couldn't set virtual memory size limit\n");
                 break;
             case -7:
-                printf("Error?????\n");
+                printf("An unknown error occcured while waiting for the child proceess\n");
+                break;
+            case -8:
+                perror("Error");
+                printf("The child process couldn't be created\n");
                 break;
         }
     }

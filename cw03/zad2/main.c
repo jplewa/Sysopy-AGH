@@ -45,18 +45,22 @@ int parse_file(char* file_name){
         }
         arguments[count] = NULL;
         pid = fork();
-        if (pid == 0 && execvp(arguments[0], arguments) < 0) return line;
+        if (pid == 0){
+            if (execvp(arguments[0], arguments) < 0) exit(2);
+        }
         else if (pid > 0){
             int status = 0;
-            if (waitpid(pid, &status, 0) == -1) return line;
+            if (waitpid(pid, &status, 0) == -1) return -7;
+            if (WIFEXITED(status) && WEXITSTATUS(status) != 0) return line;
         }
+        else return -8;
     } 
     return 0;
 }
 
 void print_errors(int error_code){
     if (error_code > 0){
-        printf("Error executing command on line %d\n", error_code);
+        printf("Error executing command in line %d\n", error_code);
     }
     else{
         switch (error_code){
@@ -68,10 +72,16 @@ void print_errors(int error_code){
                 printf("Please provide batch file name\n");
                 break;
             case -2:
-                printf("Incorrect arguments\n");
+                perror("Error");
                 printf("Requested batch file doesn't exist\n");
                 break;
-
+            case -7:
+                printf("An unknown error occcured while waiting for the child proceess\n");
+                break;
+            case -8:
+                perror("Error");
+                printf("The child process couldn't be created\n");
+                break;
         }
     }
 }
