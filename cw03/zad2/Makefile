@@ -9,4 +9,9 @@ clean:
 	rm -f *.o
 
 tests:
+	rm -f plik
+	echo ls -la >> plik
+	echo pwd >> plik
+	echo cd / >> plik
+	echo ls -la >> plik
 	./program plik

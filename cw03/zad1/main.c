@@ -73,6 +73,7 @@ void search_dirs(char* current_path, int cmp, time_t date){
                 }
             }
             wait(NULL);
+            fflush(stdout);
         }
         if (closedir(new_directory) != 0){
             printf("Error: a problem occured while closing directory %s.\n", current_path);
@@ -145,7 +146,5 @@ void parse(int argc, char* argv[]){
 }
 
 int main(int argc, char* argv[]){
-    for (int i=0; i<argc; i++) printf("%s ", argv[i]);
-    printf("\n");
     parse(argc, argv);
 }
