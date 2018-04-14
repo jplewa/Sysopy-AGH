@@ -10,9 +10,21 @@
 int parse(int argc, char* argv[]);
 void print_error(int error_code);
 void children_processes();
+void print_number(int n);
 void real_time_handler(int signum, siginfo_t* sig_info, void* sig_context);
 void sigusr1_handler(int signum, siginfo_t* sig_info, void* sig_context);
+void real_time_handler(int signum, siginfo_t* sig_info, void* sig_context);
+void exit_handler(int signum, siginfo_t* sig_info, void* sig_context);
+void sigint_handler(int signum, siginfo_t* sig_info, void* sig_context);
 void set_handlers();
+
+const char* msg1 = "Received SIGUSR1 request from process ";
+const char* msg2 = "Sent SIGCONT permission to process ";
+const char* msg3a = "Received SIGRTMIN+";
+const char* msg3b = " signal from ";
+const char* msg4a = "Process ";
+const char* msg4b = " exited with status ";
+const char* msg_sigint = "\nSIGINT signal was received\nAll children have been terminated\n";
 
 int N = 0;
 int K = 0;
@@ -115,13 +127,28 @@ void children_processes(){
     exit(0);
 }
 
+void print_number (int n){
+    char buffer[12];
+    int digits = 0;
+    int tmp = n;
+    while (tmp > 0){
+        digits++;
+        tmp/=10;
+    }
+    buffer[digits] = '\0';
+    while (digits > 0){
+        digits--;
+        buffer[digits] = 48 + n%10;
+        n/=10;
+    } 
+    write(1, buffer, strlen(buffer));
+}
+
 void sigusr1_handler(int signum, siginfo_t* sig_info, void* sig_context){
-    char* buffer;
     if (options[1]){
-        buffer = calloc(100, 1);
-        sprintf(buffer, "Received SIGUSR1 request from process %d\n", (int)sig_info -> si_pid);
-        write(1, buffer, 100);
-        free(buffer);
+        write(1, msg1, 38);
+        print_number((int)sig_info -> si_pid);
+        write(1,"\n\0", 2);
     }
     children[K_INDEX] = sig_info -> si_pid;
     K_INDEX++;
@@ -129,44 +156,43 @@ void sigusr1_handler(int signum, siginfo_t* sig_info, void* sig_context){
         for (int i = 0; i < K; i++){
             kill(children[i], SIGCONT);
             if (options[2]){
-                buffer = calloc(100, 1);
-                sprintf(buffer, "Sent SIGCONT permission to process %d\n", (int)children[i]);
-                write(1, buffer, 100);
-                free(buffer);
+                write(1, msg2, 35);
+                print_number((int)children[i]);
+                write(1, "\n\0", 2);
             }
         }
     }
     else if (K_INDEX > K){
         kill(sig_info -> si_pid, SIGCONT);
         if (options[2]){
-            buffer = calloc(100, 1);
-            sprintf(buffer, "Sent SIGCONT permission to process %d\n", sig_info -> si_pid);
-            write(1, buffer, 100);
-            free(buffer);
+            write(1, msg2, 35);
+            print_number((int)sig_info -> si_pid);
+            write(1, "\n\0", 2);
         }
     }
 }
 
 void real_time_handler(int signum, siginfo_t* sig_info, void* sig_context){
     if (options[3]){
-        char* buffer = calloc(100, 1);
-        sprintf(buffer, "Received SIGRTMIN+%d signal from %d\n", (signum-SIGRTMIN), (int) sig_info -> si_pid);
-        write(1, buffer, 100);
-        free(buffer);
+        write(1, msg3a, 18);
+        print_number(signum-SIGRTMIN);
+        write(1, msg3b, 13);
+        print_number((int) sig_info -> si_pid);
+        write(1, "\n\0", 2);
     }
 }
 
 void exit_handler(int signum, siginfo_t* sig_info, void* sig_context){
-    char* buffer;
     pid_t pid;
     int status;
     while ((pid = waitpid(-1, &status, WNOHANG)) > 0){
         if (WIFEXITED(status)){
             if (options[4]){
-                buffer = calloc(50, 1);
-                sprintf(buffer, "Process %d exited with status %d\n", pid, WEXITSTATUS(status));
-                write(1, buffer, 50);
-                free(buffer);
+                write(1, msg4a, 8);
+                print_number(pid);
+                write(1, msg4b, 20);
+                print_number(WEXITSTATUS(status));
+                write(1, "\n\0", 2);
             }
             COUNT--;
         }
@@ -178,11 +204,7 @@ void sigint_handler(int signum, siginfo_t* sig_info, void* sig_context){
         for (int i = 0; children[i] != 0; i++){
             kill(children[i], SIGKILL);
         }
-
-        char* buffer = calloc(80, 1);
-        sprintf(buffer, "\nSIGINT signal was received\nAll children have been terminated\n");
-        write(1, buffer, 80);
-        free(buffer);
+        write(1, msg_sigint, 62);
         exit(0);
     }
 }
