@@ -1,0 +1,48 @@
+1. RECORD SIZE = 4
+  1.1. 2000 records
+       | System copy  |	user time:  0.000000	| system time:  0.000000 |
+       | Library copy |	user time:  0.000000	| system time:  0.000000 |
+       | System sort  |	user time:  0.230000	| system time:  2.410000 |
+       | Library sort |	user time:  0.720000	| system time:  3.210000 |
+  1.2. 5000 records
+       | System copy  |	user time:  0.000000	| system time:  0.000000 |
+       | Library copy |	user time:  0.000000	| system time:  0.000000 |
+       | System sort  |	user time:  1.530000	| system time: 15.090000 |
+       | Library sort |	user time:  4.260000	| system time: 20.209999 |
+
+2. RECORD SIZE = 512
+  2.1. 2000 records
+       | System copy  |	user time:  0.000000	| system time:  0.000000 |
+       | Library copy |	user time:  0.000000	| system time:  0.000000 |
+       | System sort  |	user time:  0.230000	| system time:  2.590000 |
+       | Library sort |	user time:  0.780000	| system time:  3.260000 |
+  2.2. 5000 records
+       | System copy  |	user time:  0.000000	| system time:  0.010000 |
+       | Library copy |	user time:  0.000000	| system time:  0.000000 |
+       | System sort  |	user time:  1.500000	| system time: 16.500000 |
+       | Library sort |	user time:  4.970000	| system time: 21.350000 |
+
+3. RECORD SIZE = 4096
+  3.1. 2000 records
+       | System copy  |	user time:  0.000000	| system time:  0.010000 |
+       | Library copy |	user time:  0.000000	| system time:  0.010000 |
+       | System sort  |	user time:  0.290000	| system time:  5.980000 |
+       | Library sort |	user time:  0.550000	| system time:  5.920000 |
+  3.2. 5000 records
+       | System copy  |	user time:  0.000000	| system time:  0.030000 |
+       | Library copy |	user time:  0.000000	| system time:  0.040000 |
+       | System sort  |	user time:  1.590000	| system time: 40.160000 |
+       | Library sort |	user time:  4.150000	| system time: 36.020000 |
+
+4. RECORD SIZE = 8192
+  4.1. 2000 records
+       | System copy  |	user time:  0.000000	| system time:  0.010000 |
+       | Library copy |	user time:  0.000000	| system time:  0.030000 |
+       | System sort  |	user time:  0.270000	| system time: 11.640000 |
+       | Library sort |	user time:  0.720000	| system time: 10.320000 |
+  4.2. 5000 records
+       | System copy  |	user time:  0.000000	| system time:  0.050000 |
+       | Library copy |	user time:  0.000000	| system time:  0.070000 |
+       | System sort  |	user time:  1.580000	| system time: 68.190002 |
+       | Library sort |	user time:  4.280000	| system time: 71.980003 |
+       
