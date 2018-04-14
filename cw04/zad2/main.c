@@ -111,7 +111,6 @@ void children_processes(){
             sigqueue(getppid(), rand()%(SIGRTMAX - SIGRTMIN) + SIGRTMIN, a);
             exit(sleep_time/1000000);
         }
-        else sleep(1);
     }
     while(COUNT > 0){}
     print_error(0);
