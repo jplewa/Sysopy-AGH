@@ -18,7 +18,9 @@ void close_msgq(){
 void inform_server(){
     char* message = calloc(MTEXTSIZE-1,1);
     sprintf(message, "%s%08d", STOP, getpid());
-    mq_send(server_qd, message, strlen(message)+1, 1);
+    if (mq_send(server_qd, message, strlen(message)+1, 1) == -1){
+        printf("Error: failed to notify server\n");
+    }
     free(message);
 }
 

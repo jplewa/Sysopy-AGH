@@ -5,7 +5,11 @@ struct client_info clients[MAX_CLIENTS+1];
 
 void close_msgq(){
     for (int i = 1; i < MAX_CLIENTS + 1; i++){
-        if (clients[i].pid != -1) kill(clients[i].pid, SIGINT);
+        if (clients[i].pid != -1){
+            kill(clients[i].pid, SIGTERM);
+            printf("%d\t%d\t\t%d\t\tDISCONNECT\n", i, clients[i].pid, clients[i].qid);                
+            clients[i].pid = -1;
+        }
     }
     printf("\nCLOSED QUEUE: %d\n", server_qid);
     if ((msgctl(server_qid, IPC_RMID, NULL)) == -1){
@@ -23,28 +27,32 @@ void print_error(int error_code){
         case -1:
             perror("Error");
             printf("Couldn't generate message queue ID\n");
-            break;
+            _exit(0);
         case -2:
             perror("Error");
             printf("Couldn't create message queue\n");
-            break;
+            _exit(0);
         case -3:
             perror("Error");
             printf("Couldn't set exit function\n");
-            break;
+            _exit(0);
         case -4:
             perror("Error");
             printf("Couldn't set SIGINT handler\n");
-            break;
+            exit(0);
+        case -5:
+            perror("Error");
+            printf("Couldn't send message to client\n");
+            exit(0);
     }
 }
 int initialize(){
-    if ((atexit(close_msgq)) != 0) return -3;
     struct sigaction act;
     act.sa_handler = &sigint_handler;
     sigfillset(&act.sa_mask);
     act.sa_flags = 0;
     if ((sigaction(SIGINT, &act, NULL)) == -1) return -4;
+    if ((atexit(close_msgq)) != 0) return -3;
     const char *home_dir;
     key_t server_qkey;
     if ((home_dir = getenv("HOME")) == NULL) home_dir = getpwuid(getuid()) -> pw_dir;
@@ -77,22 +85,18 @@ void new_client(struct msg* request, struct msg* response){
         clients[i].pid = request -> mpid;
         printf("%d\t%d\t\t%d\t\tCONNECT\n", i, clients[i].pid, clients[i].qid);
     }
-    else{
-        printf("-\t%d\t\t%d\t\tCONNECT - FAILED\n", request -> mpid, qid);
-    }
+    else printf("-\t%d\t\t%d\t\tCONNECT - FAILED\n", request -> mpid, qid);
     response -> mtype = i;
     response -> mtext[0] = '\0';
     if (msgsnd(qid, (void*) response, (sizeof(response -> mtext) + sizeof(response -> mpid)), 0) == -1){
-        perror("Error");
+        print_error(-5);
     }
 }
 
 void mirror(struct msg* request, struct msg* response){
     int count = 0;
     while (request -> mtext[count] != '\0' && request -> mtext[count] != '\n' && count < MTEXTSIZE) count++;
-    for (int i = 0; i < count; i++){
-        response -> mtext[i] = request -> mtext[count - i - 1];
-    }
+    for (int i = 0; i < count; i++) response -> mtext[i] = request -> mtext[count - i - 1];
     response -> mtext[count] = '\0';
     response -> mpid = -1;
     response -> mtype = find_client(request -> mpid);
@@ -159,7 +163,6 @@ void time(struct msg* request, struct msg* response){
     response -> mpid = -1;
     response -> mtype = find_client(request -> mpid);
     printf("%ld\t%d\t\t%d\t\tTIME\n", response -> mtype, clients[response -> mtype].pid, clients[response -> mtype].qid);
-
 }
 
 void receive_messages(){
@@ -186,6 +189,8 @@ void receive_messages(){
                 case END:
                     end_received = 1;
                     printf("%d\t%d\t\t%d\t\tEND\n", client_id, clients[client_id].pid, clients[client_id].qid);
+                    printf("%d\t%d\t\t%d\t\tDISCONNECT\n", client_id, clients[client_id].pid, clients[client_id].qid);                
+                    clients[client_id].pid = -1;
                     break;                                        
                 case STOP:
                     if ((client_id = find_client(request -> mpid)) != -1){
@@ -197,15 +202,15 @@ void receive_messages(){
             client_id = find_client(request -> mpid);
             if (request -> mtype > 1 && request -> mtype < 5 && client_id != -1){
                 if (msgsnd(clients[client_id].qid, (void*) response, (sizeof(response -> mtext) + sizeof(response -> mpid)), 0) == -1){
-                    perror("Error");
+                    free(request);
+                    free(response);
+                    print_error(-5);
                 }
             }
         }
         free(request);
         free(response);
-        if (end_received){
-            exit(0);
-        }
+        if (end_received) exit(0);
     }
 }
 

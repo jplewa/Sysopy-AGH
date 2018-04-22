@@ -15,68 +15,89 @@ void inform_server(){
     struct msg* message = malloc(sizeof(struct msg));
     message -> mtype = STOP;
     message -> mpid = getpid();
-    msgsnd(server_qid, (void*) message, (sizeof(message -> mtext) + sizeof(message -> mpid)), 0);
+    if (msgsnd(server_qid, (void*) message, (sizeof(message -> mtext) + sizeof(message -> mpid)), 0) == -1){
+        printf("Error: failed to notify server\n");
+    }
 }
 
 void sigint_handler(int signum){
     write(1, "\n\nCaptured SIGINT\n", 18);
-    exit(1);
+    inform_server();
+    close_msgq();
+    _exit(0);
+}
+
+void sigterm_handler(int signum){
+    write(1, "\nTerminated by server\n", 22);
+    close_msgq();
+    _exit(0);
 }
 
 void print_error(int error_code){
     if (error_code > 0){
         printf("Error: Incorrect request in line %d\n", error_code);
-        return;
+        exit(0);
     }
     switch(error_code){
         case -1:
             perror("Error");
             printf("Couldn't generate message queue ID\n");
+            close_msgq();
             _exit(0);
         case -2:
             perror("Error");
-            printf("Couldn't create message queue\n");
+            printf("Couldn't create client's message queue\n");
             _exit(0);
         case -3:
             perror("Error");
             printf("Couldn't set exit function\n");
-            break;
+            _exit(0);
         case -4:
             perror("Error");
-            printf("Couldn't set SIGINT handler\n");
-            break;
+            printf("Couldn't set signal handlers\n");
+            exit(0);
         case -5:
             perror("Error");
             printf("Couldn't send message to server\n");
-            break;
+            exit(0);
         case -6:
             perror("Error");
             printf("Couldn't receive message from server\n");
-            break;
+            exit(0);
         case -7:
             printf("Error: Incorrect arguments\n");
             printf("Available input options: -c (command line) or -f [filename] (file)\n");
-            break;
+            exit(0);
         case -8:
             printf("Error: Authentication failed\n");
             printf("Client ID doesn't match\n");
-            break;
+            exit(0);
         case -9:
             printf("Error: Server is at its full capacity\n");
             printf("Please try to connect later\n");
-            break;
+            close_msgq();
+            _exit(0);
+        case -10:
+            perror("Error");
+            printf("Couldn't open server's message queue\n");
+            close_msgq();
+            _exit(0);
     }
 }
 
 int initialize(){
     printf("<%d>\n", getpid());
-    if ((atexit(close_msgq)) != 0) return -3;
-    if ((atexit(inform_server)) != 0) return -3;
     struct sigaction act;
     act.sa_handler = &sigint_handler;
     sigfillset(&act.sa_mask);
     act.sa_flags = 0;
     if ((sigaction(SIGINT, &act, NULL)) == -1) return -4;
+    act.sa_handler = &sigterm_handler;
+    if ((sigaction(SIGTERM, &act, NULL)) == -1) return -4;
+   
+    if ((atexit(close_msgq)) != 0) return -3;
+    if ((atexit(inform_server)) != 0) return -3;
+   
     if ((client_qid = msgget(IPC_PRIVATE, IPC_CREAT | 0777)) == -1){
         return -2;
     }
@@ -88,21 +109,27 @@ int initialize(){
         return -1;
     }
     if ((server_qid = msgget(server_qkey, 0)) == -1){
-        return -2;
+        return -10;
     }
     struct msg* message = malloc(sizeof(struct msg));
     message -> mtype = NEW;
     message -> mpid = getpid();
     sprintf(message -> mtext,"%d", client_qid);;
     if (msgsnd(server_qid, (void*) message, (sizeof(message -> mtext) + sizeof(message -> mpid)), 0) == -1){
+        free(message);
         return -5;
     }
     if (msgrcv(client_qid, (void*) message, (sizeof(message -> mtext) + sizeof(message -> mpid)), 0, 0) == -1){
+        free(message);
         return -6;
     }
     id = message -> mtype;
-    if (id == MAX_CLIENTS + 1) return -9;
+    if (id == MAX_CLIENTS + 1){
+        free(message);
+        return -9;
+    }
     printf("RECEIVED ID: %ld\n\n", id);
+    free(message);
     return 0;
 }
 
@@ -152,6 +179,9 @@ int send_requests(FILE* source){
         message -> mpid = getpid();
         strncpy(message -> mtext, get_mtext(buffer), 1024);
         if (msgsnd(server_qid, (void*) message, (sizeof(message -> mtext) + sizeof(message -> mpid)), 0) == -1){
+            free(buffer);
+            free(message);
+            fclose(source);
             return -5;   
         }
         if (mtype == 5){
@@ -163,9 +193,17 @@ int send_requests(FILE* source){
         }
         else{
             if (msgrcv(client_qid, (void*) message, (sizeof(message -> mtext) + sizeof(message -> mpid)), 0, 0) == -1){
+                free(message);
+                free(buffer);
+                fclose(source);
                 return -6;
             }
-            if (message -> mtype != id) return -8;
+            if (message -> mtype != id){
+                free(message);
+                free(buffer);
+                fclose(source);
+                return -8;
+            }
             printf("%s\n", message -> mtext);
         }
         free(message);
@@ -178,16 +216,9 @@ int send_requests(FILE* source){
 
 int main (int argc, char* argv[]){
     FILE* source = parse_arguments(argc, argv);
-    if (source == NULL){
-        print_error(-7);
-        return 0;
-    } 
+    if (source == NULL) print_error(-7); 
     int result;
-    if ((result = initialize()) != 0){
-        print_error(result);
-        return 0;
-    }
-    result = send_requests(source);
-    if (result != 0) print_error(result);
+    if ((result = initialize()) != 0) print_error(result);
+    if ((result = send_requests(source)) != 0) print_error(result);
     return 0;
 }

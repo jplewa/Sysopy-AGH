@@ -9,7 +9,7 @@
 #include <string.h>
 
 #define REQUEST_ID 114
-#define MAX_CLIENTS 1
+#define MAX_CLIENTS 2
 
 #define NEW 1
 #define MIRROR 2
