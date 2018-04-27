@@ -13,8 +13,14 @@ void close_msgq(){
         }
     }
     printf("\nCLOSED QUEUE: %s\n", SERVER_NAME);
-    mq_unlink(SERVER_NAME);
-    mq_close(server_qd);
+    if (mq_unlink(SERVER_NAME) == -1){
+        perror("Error");
+        printf("Server's queue couldn't be deleted\n");
+    }
+    if (mq_close(server_qd) == -1){
+        perror("Error");
+        printf("Server's queue couldn't be closed\n");
+    }
 }
 
 void sigint_handler(int signum){

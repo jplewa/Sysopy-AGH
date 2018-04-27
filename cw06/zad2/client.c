@@ -10,9 +10,18 @@ void close_msgq(){
     write(1, "CLOSED QUEUE: ", 14);
     write(1, client_name, strlen(client_name));
     write(1, "\n", 1);
-    mq_unlink(client_name);
-    mq_close(client_qd);
-    mq_close(server_qd);
+    if (mq_unlink(client_name) == -1){
+        perror("Error");
+        printf("Client's queue couldn't be deleted\n");
+    }
+    if(mq_close(client_qd) == -1){
+        perror("Error");
+        printf("Client's queue couldn't be closed\n");
+    }
+    if (mq_close(server_qd) == -1){
+        perror("Error");
+        printf("Server's queue couldn't be closed\n");
+    }
 }
 
 void inform_server(){
