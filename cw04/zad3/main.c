@@ -39,7 +39,7 @@ void c_exitsig_handler(int signum, siginfo_t* sig_info, void* sig_context){
 
 int parse(int argc, char* argv[]){
     if (argc < 3) return -1;
-    char * pEnd;
+    char* pEnd;
     L =  strtol (argv[1], &pEnd, 10);
     TYPE =  strtol (argv[2], &pEnd, 10);
     if (L == 0) return -1;
