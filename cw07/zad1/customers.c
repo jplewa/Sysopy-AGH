@@ -72,18 +72,19 @@ int setup(){
     return 0;
 }
 
+void print_log(char* msg, int pid){
+    struct timespec tp;
+    clock_gettime(CLOCK_MONOTONIC, &tp);
+    printf("<%d>\t\t%lld.%.9ld\t\t%s\n", pid, (long long)tp.tv_sec, tp.tv_nsec, msg);
+    fflush(stdout);
+}
+
 void get_lock(int semnum){
     struct sembuf buf;
     buf.sem_num = semnum;
     buf.sem_op = -1;
     buf.sem_flg = 0;
     semop(SEM_ID, &buf, 1);
-}
-
-void print_log(char* msg, int pid){
-    struct timespec tp;
-    clock_gettime(CLOCK_MONOTONIC, &tp);
-    printf("<%d>\t\t%lld.%.9ld\t\t%s\n", pid, (long long)tp.tv_sec, tp.tv_nsec, msg);
 }
 
 int get_lock_nowait(int semnum){
@@ -102,47 +103,70 @@ void release_lock(int semnum){
     semop(SEM_ID, &buf, 1);
 }
 
+void wake_up_barber(int pid){
+    //get_lock(BUSY_SEM);
+    MEM[BARBER_STATE_MEM] = AWAKE;
+    release_lock(BARBER_STATE_SEM);
+    MEM[BARBER_CHAIR_MEM] = pid;
+    release_lock(NAP_SEM);
+    print_log("Waking up barber", pid);
+    get_lock(BARBER_CHAIR_SEM);
+    print_log("Sitting down in barber's chair", pid);
+    get_lock(DOOR_SEM);
+    print_log("Leaving barber shop", pid);
+}
+
+void go_to_waiting_room(int pid){
+    release_lock(BARBER_STATE_SEM);
+    if (get_lock_nowait(WAITING_ROOM_SEM) < 0) print_log("No seats in waiting room", pid);
+    else {
+        get_lock(MEMORY_SEM);
+        print_log("Sitting down in waiting room", pid);
+        int my_seat;
+        if (MEM[FIRST_CUSTOMER_MEM] == -1){
+            my_seat = EXTRA_FIELDS;
+            MEM[FIRST_CUSTOMER_MEM] = EXTRA_FIELDS;
+            MEM[LAST_CUSTOMER_MEM] = EXTRA_FIELDS;
+        }
+        else {
+            MEM[LAST_CUSTOMER_MEM] = EXTRA_FIELDS + (MEM[LAST_CUSTOMER_MEM] + 1 - EXTRA_FIELDS)%MEM[SEATS_MEM];
+            my_seat = MEM[LAST_CUSTOMER_MEM];
+        }
+        MEM[my_seat] = pid;
+        release_lock(MEMORY_SEM);
+        get_lock(my_seat);
+        get_lock(BARBER_CHAIR_SEM);
+        release_lock(WAITING_ROOM_SEM);
+        print_log("Sitting down in barber's chair", pid);
+        get_lock(DOOR_SEM);
+        print_log("Leaving barber shop", pid);
+    }
+}
+
 void get_haircuts(int pid){
     for (int j = 0; j < HAIRCUTS; j++){
-        get_lock(MEMORY_SEM);
-        if (MEM[BARBER_STATE_MEM] == ASLEEP){
-            release_lock(BARBER_CHAIR_SEM);
-            MEM[BARBER_CHAIR_MEM] = pid;
-            release_lock(MEMORY_SEM);
-            get_lock(BARBER_CHAIR_SEM);
-            get_lock(DOOR_SEM);
-        }
-        else{
-            if (get_lock_nowait(WAITING_ROOM_SEM) < 0){
-                print_log("No seats in waiting room", pid);
-            }
-            else{
-                print_log("Seating down in waiting room", pid);
-                int my_seat = EXTRA_FIELDS + (MEM[FIRST_CUSTOMER_MEM] + CUSTOMERS - semctl(SEM_ID, WAITING_ROOM_SEM, GETVAL, 0))%CUSTOMERS;
-                MEM[my_seat] = pid;
-                release_lock(MEMORY_SEM);
-                get_lock(my_seat);
-                get_lock(BARBER_CHAIR_SEM);
-                get_lock(DOOR_SEM);
-
-            }
-        }
+        get_lock(BARBER_STATE_SEM);
+        if (MEM[BARBER_STATE_MEM] == ASLEEP) wake_up_barber(pid);
+        else go_to_waiting_room(pid);
     }
 }
 
 int spawn(){
+    int status;
     int pid;
     for (int i = 0; i < CUSTOMERS; i++){
         if ((pid = fork()) > 0){
-            get_haircuts(pid);
+
         }
         else if (pid == 0){
-
+            get_haircuts(getpid());
+            exit(0);
         }
         else{
-
+            exit(0);
         }
     }
+    while(wait(&status) > 0);
     return 0;
 }
 

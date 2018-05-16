@@ -71,7 +71,22 @@ const char *get_home_path(){
     return home_dir;
 }
 
+
+void SIGTERM_handler(int signum){
+    exit(0);
+}
+
 int setup(){
+    struct sigaction act;
+    act.sa_handler = &SIGTERM_handler;
+    sigfillset(&act.sa_mask);
+    act.sa_flags = SA_RESTART;
+    sigaction(SIGTERM, &act, NULL);
+
+    sigset_t set;
+    sigfillset(&set);
+    sigdelset(&set, SIGTERM);
+    sigprocmask(SIG_SETMASK, &set, NULL);
     key_t shm_key;
     key_t sem_key;
 
@@ -88,7 +103,9 @@ int setup(){
     }
     atexit(&atexit2);
     for (int i = 0; i < (CHAIRS + EXTRA_FIELDS); i++) MEM[i] = 0;
-    MEM[FIRST_CUSTOMER_MEM] = EXTRA_FIELDS-1;
+    MEM[FIRST_CUSTOMER_MEM] = -1;
+    MEM[LAST_CUSTOMER_MEM] = -1;
+    MEM[SEATS_MEM] = CHAIRS;
 
     // semaphores
     if ((sem_key = ftok(get_home_path(), SEM_CODE)) == -1){
@@ -98,10 +115,13 @@ int setup(){
         return -7;
     }
     atexit(&atexit3);
-    semctl(SEM_ID, MEMORY_SEM, SETVAL, 1);
     semctl(SEM_ID, WAITING_ROOM_SEM, SETVAL, CHAIRS);
-    semctl(SEM_ID, BARBER_CHAIR_SEM, SETVAL, 1);
-    for (int i = 2; i < (CHAIRS + EXTRA_FIELDS); i++) semctl(SEM_ID, i, SETVAL, 0);
+    semctl(SEM_ID, BARBER_CHAIR_SEM, SETVAL, 0);
+    semctl(SEM_ID, DOOR_SEM, SETVAL, 0);
+    semctl(SEM_ID, BARBER_STATE_SEM, SETVAL, 1);
+    semctl(SEM_ID, MEMORY_SEM, SETVAL, 1);
+    semctl(SEM_ID, NAP_SEM, SETVAL, 0);
+    for (int i = EXTRA_FIELDS; i < (CHAIRS + EXTRA_FIELDS); i++) semctl(SEM_ID, i, SETVAL, 0);
 
     return 0;
 }
@@ -111,7 +131,7 @@ void get_lock(int semnum){
     buf.sem_num = semnum;
     buf.sem_op = -1;
     buf.sem_flg = 0;
-    if (semop(SEM_ID, &buf, 1));
+    semop(SEM_ID, &buf, 1);
 }
 
 void release_lock(int semnum){
@@ -119,7 +139,7 @@ void release_lock(int semnum){
     buf.sem_num = semnum;
     buf.sem_op = 1;
     buf.sem_flg = 0;
-    if (semop(SEM_ID, &buf, 1));
+    semop(SEM_ID, &buf, 1);
 }
 
 void print_log(char* msg, int pid){
@@ -128,50 +148,45 @@ void print_log(char* msg, int pid){
     printf("<%d>\t\t%lld.%.9ld\t\t%s\n", pid, (long long)tp.tv_sec, tp.tv_nsec, msg);
 }
 
-void go_to_sleep(){
-
-}
-
-void take_a_nap(){
-    get_lock(MEMORY_SEM);
-    MEM[BARBER_STATE_MEM] = ASLEEP;
-    print_log("Barber asleep", getpid());
-    release_lock(MEMORY_SEM);
-    get_lock(BARBER_CHAIR_SEM);
-    MEM[BARBER_STATE_MEM] = WORKING;
-    print_log("Barber awake", getpid());
-}
-
 void serve_customer(int pid){
+    release_lock(MEMORY_SEM);
     print_log("Giving customer a haircut", pid);
     release_lock(BARBER_CHAIR_SEM);
     print_log("Finished haircut", pid);
     release_lock(DOOR_SEM);
-    MEM[FIRST_CUSTOMER_MEM] = EXTRA_FIELDS + (MEM[FIRST_CUSTOMER_MEM]+1)%CHAIRS;
-    release_lock(MEMORY_SEM);
 }
 
 void invite_customer(int pid){
-    get_lock(MEMORY_SEM);
-    get_lock(DOOR_SEM);
     print_log("Inviting customer", pid);
     release_lock(MEM[FIRST_CUSTOMER_MEM]);
+    MEM[FIRST_CUSTOMER_MEM] = EXTRA_FIELDS + (MEM[FIRST_CUSTOMER_MEM]+1-EXTRA_FIELDS)%CHAIRS;
     serve_customer(pid);
+}
+
+void take_a_nap(){
+    MEM[BARBER_STATE_MEM] = ASLEEP;
+    release_lock(BARBER_STATE_SEM);
+    print_log("Barber asleep", getpid());
+    get_lock(NAP_SEM);
+    print_log("Barber awake", getpid());
+    get_lock(MEMORY_SEM);
+    serve_customer(MEM[BARBER_CHAIR_MEM]);
 }
 
 int barber_shop(){
     while(1){
+        get_lock(BARBER_STATE_SEM);
         if (semctl(SEM_ID, WAITING_ROOM_SEM, GETVAL, 0) == CHAIRS){
             take_a_nap();
-            serve_customer(MEM[BARBER_STATE_MEM]);
         }
         else{
+            release_lock(BARBER_STATE_SEM);
+            get_lock(MEMORY_SEM);
             invite_customer(MEM[MEM[FIRST_CUSTOMER_MEM]]);
         }
     }
     return 0;
 }
-
 
 int main (int argc, char* argv[]){
     int result;
