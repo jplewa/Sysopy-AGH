@@ -33,6 +33,18 @@ void print_error(int error_code){
             perror("Error");
             printf("Couldn't get semaphore set\n");
             exit(0);
+        case -8:
+            perror("Error");
+            printf("Couldn't obtain time stamp\n");
+            exit(0);
+         case -9:
+            perror("Error");
+            printf("Couldn't manipulate semaphore set\n");
+            exit(0);
+         case -10:
+            perror("Error");
+            printf("Couldn't create new process\n");
+            exit(0);
     }
 }
 
@@ -52,6 +64,11 @@ const char *get_home_path(){
 }
 
 int setup(){
+    sigset_t set;
+    sigfillset(&set);
+    sigdelset(&set, SIGTERM);
+    sigprocmask(SIG_SETMASK, &set, NULL);
+
     key_t shm_key;
     key_t sem_key;
     if ((shm_key = ftok(get_home_path(), SHM_CODE)) == -1){
@@ -72,56 +89,26 @@ int setup(){
     return 0;
 }
 
-void print_log(char* msg, int pid){
-    struct timespec tp;
-    clock_gettime(CLOCK_MONOTONIC, &tp);
-    printf("<%d>\t\t%lld.%.9ld\t\t%s\n", pid, (long long)tp.tv_sec, tp.tv_nsec, msg);
-    fflush(stdout);
-}
-
-void get_lock(int semnum){
-    struct sembuf buf;
-    buf.sem_num = semnum;
-    buf.sem_op = -1;
-    buf.sem_flg = 0;
-    semop(SEM_ID, &buf, 1);
-}
-
-int get_lock_nowait(int semnum){
-    struct sembuf buf;
-    buf.sem_num = semnum;
-    buf.sem_op = -1;
-    buf.sem_flg = IPC_NOWAIT;
-    return semop(SEM_ID, &buf, 1);
-}
-
-void release_lock(int semnum){
-    struct sembuf buf;
-    buf.sem_num = semnum;
-    buf.sem_op = 1;
-    buf.sem_flg = 0;
-    semop(SEM_ID, &buf, 1);
-}
-
-void wake_up_barber(int pid){
-    //get_lock(BUSY_SEM);
+int wake_up_barber(int pid){
     MEM[BARBER_STATE_MEM] = AWAKE;
-    release_lock(BARBER_STATE_SEM);
     MEM[BARBER_CHAIR_MEM] = pid;
-    release_lock(NAP_SEM);
-    print_log("Waking up barber", pid);
-    get_lock(BARBER_CHAIR_SEM);
-    print_log("Sitting down in barber's chair", pid);
-    get_lock(DOOR_SEM);
-    print_log("Leaving barber shop", pid);
+    if (release_lock(NAP_SEM)) return -9;
+    if (release_lock(BARBER_STATE_SEM)) return -9;
+    if (print_log("Waking up barber", pid)) return -8;
+    if (get_lock(BARBER_CHAIR_SEM)) return -9;
+    if (print_log("Sitting down in barber's chair", pid)) return -8;
+    if (get_lock(DOOR_SEM)) return -9;
+    if (print_log("Leaving barber shop", pid)) return -8;
+    return 0;
 }
 
-void go_to_waiting_room(int pid){
-    release_lock(BARBER_STATE_SEM);
-    if (get_lock_nowait(WAITING_ROOM_SEM) < 0) print_log("No seats in waiting room", pid);
+int go_to_waiting_room(int pid){
+    if (release_lock(BARBER_STATE_SEM)) return -9;
+    if (get_lock_nowait(WAITING_ROOM_SEM) < 0){
+        if (print_log("No seats in waiting room", pid)) return -8;
+    }
     else {
-        get_lock(MEMORY_SEM);
-        print_log("Sitting down in waiting room", pid);
+        if (print_log("Sitting down in waiting room", pid)) return -8;
         int my_seat;
         if (MEM[FIRST_CUSTOMER_MEM] == -1){
             my_seat = EXTRA_FIELDS;
@@ -133,48 +120,51 @@ void go_to_waiting_room(int pid){
             my_seat = MEM[LAST_CUSTOMER_MEM];
         }
         MEM[my_seat] = pid;
-        release_lock(MEMORY_SEM);
-        get_lock(my_seat);
-        get_lock(BARBER_CHAIR_SEM);
-        release_lock(WAITING_ROOM_SEM);
-        print_log("Sitting down in barber's chair", pid);
-        get_lock(DOOR_SEM);
-        print_log("Leaving barber shop", pid);
+        if (get_lock(my_seat)) return -9;
+        if (get_lock(BARBER_CHAIR_SEM)) return -9;
+        if (get_lock(BARBER_STATE_SEM)) return -9;
+        if (release_lock(WAITING_ROOM_SEM)) return -9;
+        if (print_log("Sitting down in barber's chair", pid)) return -8;
+        if (get_lock(DOOR_SEM)) return -9;
+        if (print_log("Leaving barber shop", pid)) return -8;
+        if (release_lock(BARBER_STATE_SEM)) return -9;
     }
-}
-
-void get_haircuts(int pid){
-    for (int j = 0; j < HAIRCUTS; j++){
-        get_lock(BARBER_STATE_SEM);
-        if (MEM[BARBER_STATE_MEM] == ASLEEP) wake_up_barber(pid);
-        else go_to_waiting_room(pid);
-    }
-}
-
-int spawn(){
-    int status;
-    int pid;
-    for (int i = 0; i < CUSTOMERS; i++){
-        if ((pid = fork()) > 0){
-
-        }
-        else if (pid == 0){
-            get_haircuts(getpid());
-            exit(0);
-        }
-        else{
-            exit(0);
-        }
-    }
-    while(wait(&status) > 0);
     return 0;
 }
 
+int get_haircuts(int pid){
+    int result;
+    for (int j = 0; j < HAIRCUTS; j++){
+        if (get_lock(BARBER_STATE_SEM)) return -9;
+        if (MEM[BARBER_STATE_MEM] == ASLEEP){
+            if ((result = wake_up_barber(pid)) != 0) return result;
+        }
+        else if ((result = go_to_waiting_room(pid)) != 0) return result;
+    }
+    return 0;
+}
+
+int spawn(){
+    int result;
+    int pid;
+    for (int i = 0; i < CUSTOMERS; i++){
+        pid = fork();
+        if (pid == 0){
+            if ((result = get_haircuts(getpid())) != 0) return result;
+            exit(0);
+        }
+        else if (pid < 0){
+            return -10;
+        }
+    }
+    while(wait(NULL) > 0);
+    return 0;
+}
 
 int main(int argc, char* argv[]){
     int result;
     if ((result = parse_args(argc, argv) != 0)) print_error(result);
     if ((result = setup()) != 0) print_error(result);    
-    spawn();
+    if ((result = spawn()) != 0) print_error(result);    
     return 0;
 }

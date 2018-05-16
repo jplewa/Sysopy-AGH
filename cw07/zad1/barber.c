@@ -54,6 +54,14 @@ void print_error(int error_code){
             perror("Error");
             printf("Couldn't set initial semaphore states\n");
             exit(0);
+        case -9:
+            perror("Error");
+            printf("Couldn't obtain time stamp\n");
+            exit(0);
+        case -10:
+            perror("Error");
+            printf("Couldn't manipulate semaphore set\n");
+            exit(0);    
     }
 }
 
@@ -119,70 +127,50 @@ int setup(){
     semctl(SEM_ID, BARBER_CHAIR_SEM, SETVAL, 0);
     semctl(SEM_ID, DOOR_SEM, SETVAL, 0);
     semctl(SEM_ID, BARBER_STATE_SEM, SETVAL, 1);
-    semctl(SEM_ID, MEMORY_SEM, SETVAL, 1);
     semctl(SEM_ID, NAP_SEM, SETVAL, 0);
     for (int i = EXTRA_FIELDS; i < (CHAIRS + EXTRA_FIELDS); i++) semctl(SEM_ID, i, SETVAL, 0);
 
     return 0;
 }
 
-void get_lock(int semnum){
-    struct sembuf buf;
-    buf.sem_num = semnum;
-    buf.sem_op = -1;
-    buf.sem_flg = 0;
-    semop(SEM_ID, &buf, 1);
+int serve_customer(int pid){
+    if (print_log("Giving customer a haircut", pid)) return -9;
+    if (release_lock(BARBER_CHAIR_SEM)) return -10;
+    if (print_log("Finished haircut", pid)) return -9;
+    if (release_lock(DOOR_SEM)) return -10;
+    return 0;
 }
 
-void release_lock(int semnum){
-    struct sembuf buf;
-    buf.sem_num = semnum;
-    buf.sem_op = 1;
-    buf.sem_flg = 0;
-    semop(SEM_ID, &buf, 1);
-}
-
-void print_log(char* msg, int pid){
-    struct timespec tp;
-    clock_gettime(CLOCK_MONOTONIC, &tp);
-    printf("<%d>\t\t%lld.%.9ld\t\t%s\n", pid, (long long)tp.tv_sec, tp.tv_nsec, msg);
-}
-
-void serve_customer(int pid){
-    release_lock(MEMORY_SEM);
-    print_log("Giving customer a haircut", pid);
-    release_lock(BARBER_CHAIR_SEM);
-    print_log("Finished haircut", pid);
-    release_lock(DOOR_SEM);
-}
-
-void invite_customer(int pid){
-    print_log("Inviting customer", pid);
-    release_lock(MEM[FIRST_CUSTOMER_MEM]);
+int invite_customer(int pid){
+    if (print_log("Inviting customer", pid)) return -9;
+    if (release_lock(MEM[FIRST_CUSTOMER_MEM])) return -10;
     MEM[FIRST_CUSTOMER_MEM] = EXTRA_FIELDS + (MEM[FIRST_CUSTOMER_MEM]+1-EXTRA_FIELDS)%CHAIRS;
-    serve_customer(pid);
+    int result;
+    if ((result = serve_customer(pid)) != 0) return result;
+    return 0;
 }
 
-void take_a_nap(){
+int take_a_nap(){
     MEM[BARBER_STATE_MEM] = ASLEEP;
-    release_lock(BARBER_STATE_SEM);
-    print_log("Barber asleep", getpid());
-    get_lock(NAP_SEM);
-    print_log("Barber awake", getpid());
-    get_lock(MEMORY_SEM);
-    serve_customer(MEM[BARBER_CHAIR_MEM]);
+    if (release_lock(BARBER_STATE_SEM)) return -10;
+    if (print_log("Barber asleep", getpid())) return -9;
+    if (get_lock(NAP_SEM)) return -10;
+    if (print_log("Barber awake", getpid())) return -9;
+    int result;
+    if ((result = serve_customer(MEM[BARBER_CHAIR_MEM])) != 0) return result;
+    return 0;
 }
 
 int barber_shop(){
+    int result;
     while(1){
-        get_lock(BARBER_STATE_SEM);
+        if (get_lock(BARBER_STATE_SEM)) return -10;
         if (semctl(SEM_ID, WAITING_ROOM_SEM, GETVAL, 0) == CHAIRS){
-            take_a_nap();
+            if ((result = take_a_nap()) != 0) return result;
         }
-        else{
-            release_lock(BARBER_STATE_SEM);
-            get_lock(MEMORY_SEM);
-            invite_customer(MEM[MEM[FIRST_CUSTOMER_MEM]]);
+        else {
+            if (release_lock(BARBER_STATE_SEM)) return -10;
+            if ((result = invite_customer(MEM[MEM[FIRST_CUSTOMER_MEM]])) != 0) return result;;
         }
     }
     return 0;
@@ -192,6 +180,6 @@ int main (int argc, char* argv[]){
     int result;
     if ((result = parse_args(argc, argv)) != 0) print_error(result);
     if ((result = setup()) != 0) print_error(result);    
-    barber_shop();
+    if ((result = barber_shop()) != 0) print_error(result);    
     return 0;
 }

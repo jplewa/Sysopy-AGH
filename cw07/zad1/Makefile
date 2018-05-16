@@ -1,9 +1,12 @@
-CC = gcc -Wall -std=gnu99 -ggdb
+CC = gcc -std=gnu99
+FLAGS = -Wall -L. -lbarber_shop
 LDLIBS = 
 
 all:
-	$(CC) barber.c -o barber $(LDLIBS)
-	$(CC) customers.c -o customers $(LDLIBS)
+	$(CC) -c barber_shop.c -o barber_shop.o
+	ar rcs libbarber_shop.a barber_shop.o
+	$(CC) barber.c $(FLAGS) -o barber 
+	$(CC) customers.c $(FLAGS) -o customers
 	make tests
 	make clean
 
