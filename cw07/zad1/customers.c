@@ -45,10 +45,15 @@ void print_error(int error_code){
             perror("Error");
             printf("Couldn't create new process\n");
             exit(0);
+         case -11:
+            perror("Error");
+            printf("Couldn't set signal handlers\n");
+            exit(0);
     }
 }
 
 int parse_args(int argc, char* argv[]){
+    if (argc < 3) return -1;
     char* pEnd;
     CUSTOMERS =  strtol (argv[1], &pEnd, 10);
     if (CUSTOMERS <= 0) return -1;
@@ -63,49 +68,57 @@ const char *get_home_path(){
     return home_dir;
 }
 
-int setup(){
+int setup_signals(){
     sigset_t set;
-    sigfillset(&set);
-    sigdelset(&set, SIGTERM);
-    sigprocmask(SIG_SETMASK, &set, NULL);
+    if (sigfillset(&set)) return -11;
+    if (sigdelset(&set, SIGTERM)) return -11;
+    if (sigprocmask(SIG_SETMASK, &set, NULL)) return -11;
+    return 0;
+}
 
+int setup_shm(){
     key_t shm_key;
+    if ((shm_key = ftok(get_home_path(), SHM_CODE)) == -1) return -2;
+    if ((SHM_ID = shmget(shm_key, 0, 0)) < 0) return -3;
+    if ((MEM = (pid_t*) shmat(SHM_ID, NULL, 0)) == (void*) (-1)) return -4;
+    return 0;
+}
+
+int setup_sem(){
     key_t sem_key;
-    if ((shm_key = ftok(get_home_path(), SHM_CODE)) == -1){
-        return -2;
-    }
-    if ((SHM_ID = shmget(shm_key, 0, 0)) < 0){
-        return -3;
-    }
-    if ((MEM = (pid_t*) shmat(SHM_ID, NULL, 0)) == (void*) (-1)){
-        return -4;
-    }
-    if ((sem_key = ftok(get_home_path(), SEM_CODE)) == -1){
-        return -6;
-    }
-    if ((SEM_ID = semget(sem_key, 0, 0)) < 0){
-        return -7;
-    }
+    if ((sem_key = ftok(get_home_path(), SEM_CODE)) == -1) return -6;
+    if ((SEM_ID = semget(sem_key, 0, 0)) < 0) return -7;
+    return 0;
+}
+
+int setup(){
+    int result;
+    if ((result = setup_signals()) != 0) return result;
+    if ((result = setup_shm()) != 0) return result;
+    if ((result = setup_sem()) != 0) return result;
     return 0;
 }
 
 int wake_up_barber(int pid){
     MEM[BARBER_STATE_MEM] = AWAKE;
     MEM[BARBER_CHAIR_MEM] = pid;
+    if (print_log("Waking up barber", pid)) return -8;
     if (release_lock(NAP_SEM)) return -9;
     if (release_lock(BARBER_STATE_SEM)) return -9;
-    if (print_log("Waking up barber", pid)) return -8;
     if (get_lock(BARBER_CHAIR_SEM)) return -9;
     if (print_log("Sitting down in barber's chair", pid)) return -8;
+    if (release_lock(SYNC_SEM)) return -10;
+    if (release_lock(SYNC_SEM)) return -10;
     if (get_lock(DOOR_SEM)) return -9;
     if (print_log("Leaving barber shop", pid)) return -8;
+    if (release_lock(SYNC_SEM)) return -10;
     return 0;
 }
 
 int go_to_waiting_room(int pid){
-    if (release_lock(BARBER_STATE_SEM)) return -9;
     if (get_lock_nowait(WAITING_ROOM_SEM) < 0){
         if (print_log("No seats in waiting room", pid)) return -8;
+        if (release_lock(BARBER_STATE_SEM)) return -9;
     }
     else {
         if (print_log("Sitting down in waiting room", pid)) return -8;
@@ -120,14 +133,15 @@ int go_to_waiting_room(int pid){
             my_seat = MEM[LAST_CUSTOMER_MEM];
         }
         MEM[my_seat] = pid;
+        if (release_lock(BARBER_STATE_SEM)) return -9;
         if (get_lock(my_seat)) return -9;
         if (get_lock(BARBER_CHAIR_SEM)) return -9;
-        if (get_lock(BARBER_STATE_SEM)) return -9;
-        if (release_lock(WAITING_ROOM_SEM)) return -9;
         if (print_log("Sitting down in barber's chair", pid)) return -8;
+        if (release_lock(SYNC_SEM)) return -10;
+        if (release_lock(SYNC_SEM)) return -10;
         if (get_lock(DOOR_SEM)) return -9;
         if (print_log("Leaving barber shop", pid)) return -8;
-        if (release_lock(BARBER_STATE_SEM)) return -9;
+        if (release_lock(SYNC_SEM)) return -10;
     }
     return 0;
 }
