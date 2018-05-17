@@ -182,10 +182,10 @@ int invite_customer(int pid){
 
 int take_a_nap(){
     MEM[BARBER_STATE_MEM] = ASLEEP;
-    if (print_log("Barber asleep", getpid())) return -9;
+    if (print_log("Barber asleep", -1)) return -9;
     if (release_lock(BARBER_STATE_SEM)) return -10;
     if (get_lock(NAP_SEM)) return -10;
-    if (print_log("Barber awake", getpid())) return -9;
+    if (print_log("Barber awake", -1)) return -9;
     int result;
     if ((result = serve_customer(MEM[BARBER_CHAIR_MEM])) != 0) return result;
     return 0;

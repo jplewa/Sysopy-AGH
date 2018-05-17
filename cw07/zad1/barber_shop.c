@@ -3,7 +3,8 @@
 int print_log(char* msg, int pid){
     struct timespec tp;
     if (clock_gettime(CLOCK_MONOTONIC, &tp) < 0) return -8;
-    printf("<%d>\t\t%lld.%.9ld\t\t%s\n", pid, (long long)tp.tv_sec, tp.tv_nsec, msg);
+    if (pid != -1) printf("<%d>\t\t%lld.%.9ld\t\t%s\n", pid, (long long)tp.tv_sec, tp.tv_nsec, msg);
+    else printf("\t\t%lld.%.9ld\t\t%s\n", (long long)tp.tv_sec, tp.tv_nsec, msg);
     fflush(stdout);
     return 0;
 }
