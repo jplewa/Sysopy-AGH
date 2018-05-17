@@ -106,9 +106,7 @@ int setup_signals(){
 }
 
 int setup_shm(){
-    SHM_D = shm_open(SHM_NAME, O_CREAT | O_RDWR, 0777);
-    //??????
-    if (SHM_D == -1) return -2;
+    if ((SHM_D = shm_open(SHM_NAME, O_CREAT | O_RDWR, 0777)) == -1) return -2;
     if (ftruncate(SHM_D, sizeof(pid_t)*(CHAIRS+EXTRA_FIELDS))) return -3;
 
     if (atexit(&atexit1)) return -12;
