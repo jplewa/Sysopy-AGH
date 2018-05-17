@@ -1,5 +1,4 @@
 #include "barber_shop.h"
-#include <errno.h>
 
 int CHAIRS = 0;
 
@@ -36,7 +35,7 @@ void print_error(int error_code){
             exit(0);
         case -4:
             perror("Error");
-            printf("%d Couldn't attach shared memory segment\n", errno);
+            printf("Couldn't attach shared memory segment\n");
             exit(0);
         case -5:
             perror("Error");

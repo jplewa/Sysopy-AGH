@@ -1,12 +1,13 @@
 #include "barber_shop.h"
 
-pid_t* MEM;
-sem_t** SEM;
-int CUSTOMERS;
-int HAIRCUTS;
-
 int SHM_D;
 int SEM_D;
+
+pid_t* MEM;
+sem_t** SEM;
+
+int CUSTOMERS;
+int HAIRCUTS;
 
 void print_error(int error_code){
     switch(error_code){
@@ -17,19 +18,10 @@ void print_error(int error_code){
         case -2:
             perror("Error");
             printf("Couldn't open shared memory object\n");
-            exit(0);
-        case -3:
-            //???
-            exit(0);  
+            exit(0); 
         case -4:
             perror("Error");
             printf("Couldn't attach shared memory segment\n");
-            exit(0);
-        case -6:
-            //???
-            exit(0);
-        case -7:
-            //???
             exit(0);
         case -8:
             perror("Error");
@@ -63,7 +55,6 @@ int parse_args(int argc, char* argv[]){
     if (HAIRCUTS <= 0) return -1;
     return 0;
 }
-
 
 int setup_signals(){
     sigset_t set;

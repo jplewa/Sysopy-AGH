@@ -55,15 +55,6 @@ void print_error(int error_code){
             perror("Error");
             printf("Couldn't obtain semaphore value\n");
             exit(0);
-        case -6:
-            //???
-            exit(0);
-        case -7:
-            //???
-            exit(0);
-        case -8:
-            //???
-            exit(0);
         case -9:
             perror("Error");
             printf("Couldn't obtain time stamp\n");

@@ -1,11 +1,12 @@
 #include "barber_shop.h"
 
-pid_t* MEM;
-int CUSTOMERS;
-int HAIRCUTS;
-
 int SHM_ID;
 int SEM_ID;
+
+pid_t* MEM;
+
+int CUSTOMERS;
+int HAIRCUTS;
 
 void print_error(int error_code){
     switch(error_code){
