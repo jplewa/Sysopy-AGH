@@ -159,6 +159,7 @@ int serve_customer(int pid){
     if (print_log("Giving customer a haircut", pid)) return -9;
     if (get_lock(SYNC_SEM)) return -10;
     if (print_log("Finished haircut", pid)) return -9;
+    if (get_lock(BARBER_STATE_SEM)) return -10;    
     if (release_lock(DOOR_SEM)) return -10;
     if (get_lock(SYNC_SEM)) return -10;
     return 0;
@@ -189,6 +190,7 @@ int barber_shop(){
     int result;
     int value;
     while(1){
+        if (release_lock(BARBER_STATE_SEM)) return -10;    
         if (get_lock(BARBER_STATE_SEM)) return -10;
         if (sem_getvalue(SEM[WAITING_ROOM_SEM], &value)) return -5;
         if (value == CHAIRS){
