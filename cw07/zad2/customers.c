@@ -9,6 +9,15 @@ sem_t** SEM;
 int CUSTOMERS;
 int HAIRCUTS;
 
+void atexit1(){
+    for (int i = 0; i < EXTRA_FIELDS; i++) sem_close(SEM[i]);
+}
+
+void atexit2(){
+    munmap(MEM, sizeof(pid_t)*(MEM[0]+EXTRA_FIELDS));
+    close(SHM_D);
+}
+
 void print_error(int error_code){
     switch(error_code){
         case -1:
@@ -39,6 +48,10 @@ void print_error(int error_code){
             perror("Error");
             printf("Couldn't set signal handlers\n");
             exit(0);
+        case -12:
+            perror("Error");
+            printf("Couldn't set exit handlers\n");
+            exit(0);
         case -13:
             perror("Error");
             printf("Couldn't set initial semaphore values\n");
@@ -68,6 +81,7 @@ int setup_shm(){
     if ((SHM_D = shm_open(SHM_NAME, O_RDWR, 0777)) == -1) return -2;
     if ((MEM = (pid_t*) mmap(NULL, sizeof(pid_t), PROT_READ | PROT_WRITE, MAP_SHARED, SHM_D, 0)) == MAP_FAILED) return -4;
     if ((MEM = (pid_t*) mmap(NULL, sizeof(pid_t)*(MEM[0]+EXTRA_FIELDS), PROT_READ | PROT_WRITE, MAP_SHARED, SHM_D, 0)) == MAP_FAILED) return -4;
+    if (atexit(&atexit2)) return -12;
     return 0;
 }
 
@@ -84,6 +98,7 @@ int setup_sem(){
         sprintf(sem_name, "/chair%d", (i-EXTRA_FIELDS));
         SEM[i] = sem_open(sem_name, 0);
     }
+    if (atexit(&atexit1)) return -12;
     for (int i = 0; i < (MEM[SEATS_MEM] + EXTRA_FIELDS); i++){
         if (SEM[i] == SEM_FAILED) return -13;
     }

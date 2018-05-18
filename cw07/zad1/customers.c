@@ -8,6 +8,10 @@ pid_t* MEM;
 int CUSTOMERS;
 int HAIRCUTS;
 
+void atexit1(){
+    shmdt(MEM);
+}
+
 void print_error(int error_code){
     switch(error_code){
         case -1:
@@ -50,6 +54,10 @@ void print_error(int error_code){
             perror("Error");
             printf("Couldn't set signal handlers\n");
             exit(0);
+        case -12:
+            perror("Error");
+            printf("Couldn't set exit handlers\n");
+            exit(0);
     }
 }
 
@@ -82,6 +90,7 @@ int setup_shm(){
     if ((shm_key = ftok(get_home_path(), SHM_CODE)) == -1) return -2;
     if ((SHM_ID = shmget(shm_key, 0, 0)) < 0) return -3;
     if ((MEM = (pid_t*) shmat(SHM_ID, NULL, 0)) == (void*) (-1)) return -4;
+    if (atexit(&atexit1)) return -12;
     return 0;
 }
 

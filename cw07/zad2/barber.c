@@ -13,6 +13,7 @@ void atexit1(){
 
 void atexit2(){
     munmap(MEM, sizeof(pid_t)*(CHAIRS+EXTRA_FIELDS));
+    close(SHM_D);
 }
 
 void atexit3(){
