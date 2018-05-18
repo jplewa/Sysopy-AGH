@@ -1,4 +1,5 @@
 #include "barber_shop.h"
+#include <errno.h>
 
 int CHAIRS = 0;
 
@@ -8,15 +9,15 @@ int SEM_ID;
 pid_t* MEM;
 
 void atexit1(){
-    shmctl(SHM_ID, IPC_RMID, NULL);
+    if (shmctl(SHM_ID, IPC_RMID, NULL)) printf("atexit error: failed to remove shared memory segment\n");
 }
 
 void atexit2(){
-    shmdt(MEM);
+    if (shmdt(MEM)) printf("atexit error: failed to detach shared memory segment\n");
 }
 
 void atexit3(){
-    for (int i = 0; i < EXTRA_FIELDS; i++) semctl(SEM_ID, i, IPC_RMID, NULL);
+    if (semctl(SEM_ID, 0, IPC_RMID)) printf("atexit error %d: failed to remove semaphore\n", errno);
 }
 
 void print_error(int error_code){
@@ -138,11 +139,11 @@ int setup_sem(){
     
     if (atexit(&atexit3)) return -12;
 
+    if (semctl(SEM_ID, NAP_SEM, SETVAL, 0)) return -13;
     if (semctl(SEM_ID, WAITING_ROOM_SEM, SETVAL, CHAIRS)) return -13;
     if (semctl(SEM_ID, BARBER_CHAIR_SEM, SETVAL, 0)) return -13;
     if (semctl(SEM_ID, DOOR_SEM, SETVAL, 0)) return -13;
     if (semctl(SEM_ID, BARBER_STATE_SEM, SETVAL, 0)) return -13;
-    if (semctl(SEM_ID, NAP_SEM, SETVAL, 0)) return -13;
     if (semctl(SEM_ID, SYNC_SEM, SETVAL, 0)) return -13;
     for (int i = EXTRA_FIELDS; i < (CHAIRS + EXTRA_FIELDS); i++){
         if (semctl(SEM_ID, i, SETVAL, 0)) return -13;

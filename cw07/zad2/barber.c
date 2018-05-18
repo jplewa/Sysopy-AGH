@@ -8,29 +8,29 @@ sem_t** SEM;
 pid_t* MEM;
 
 void atexit1(){
-    shm_unlink(SHM_NAME);
+    if (shm_unlink(SHM_NAME)) printf("atexit error: failed to unlink shared memory segment\n");
 }
 
 void atexit2(){
-    munmap(MEM, sizeof(pid_t)*(CHAIRS+EXTRA_FIELDS));
-    close(SHM_D);
+    if (munmap(MEM, sizeof(pid_t)*(CHAIRS+EXTRA_FIELDS))) printf("atexit error: failed to unmap shared memory segment\n");
+    if (close(SHM_D)) printf("atexit error: failed to close shared memory descriptor\n");
 }
 
 void atexit3(){
     for (int i = 0; i < EXTRA_FIELDS; i++){
-        sem_close(SEM[i]);
+        if (sem_close(SEM[i])) printf("atexit error: failed to close semaphore\n");
     }
-    sem_unlink(NAP_SEM_NAME);
-    sem_unlink(WAITING_ROOM_SEM_NAME);
-    sem_unlink(BARBER_CHAIR_SEM_NAME);
-    sem_unlink(DOOR_SEM_NAME);
-    sem_unlink(BARBER_STATE_SEM_NAME);
-    sem_unlink(SYNC_SEM_NAME);
+    if (sem_unlink(NAP_SEM_NAME)) printf("atexit error: failed to unlink semaphore\n");
+    if (sem_unlink(WAITING_ROOM_SEM_NAME)) printf("atexit error: failed to unlink semaphore\n");;
+    if (sem_unlink(BARBER_CHAIR_SEM_NAME)) printf("atexit error: failed to unlink semaphore\n");;
+    if (sem_unlink(DOOR_SEM_NAME)) printf("atexit error: failed to unlink semaphore\n");;
+    if (sem_unlink(BARBER_STATE_SEM_NAME)) printf("atexit error: failed to unlink semaphore\n");;
+    if (sem_unlink(SYNC_SEM_NAME)) printf("atexit error: failed to unlink semaphore\n");;
 
     char* sem_name = malloc(128);
     for (int i = EXTRA_FIELDS; i < (CHAIRS + EXTRA_FIELDS); i++){
         sprintf(sem_name, "/chair%d", (i-EXTRA_FIELDS));
-        sem_unlink(sem_name);
+        if (sem_unlink(sem_name)) printf("atexit error: failed to unlink semaphore\n");
     }
 }
 

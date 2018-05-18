@@ -9,7 +9,7 @@ int CUSTOMERS;
 int HAIRCUTS;
 
 void atexit1(){
-    shmdt(MEM);
+    if (shmdt(MEM)) printf("atexit error: failed to detach shared memory segment\n");;
 }
 
 void print_error(int error_code){

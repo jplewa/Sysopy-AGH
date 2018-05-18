@@ -1,7 +1,6 @@
 #include "barber_shop.h"
 
 int SHM_D;
-int SEM_D;
 
 pid_t* MEM;
 sem_t** SEM;
@@ -10,12 +9,14 @@ int CUSTOMERS;
 int HAIRCUTS;
 
 void atexit1(){
-    for (int i = 0; i < EXTRA_FIELDS; i++) sem_close(SEM[i]);
+    for (int i = 0; i < EXTRA_FIELDS; i++){
+        if (sem_close(SEM[i])) printf("atexit error: failed to close semaphore\n");
+    }
 }
 
 void atexit2(){
-    munmap(MEM, sizeof(pid_t)*(MEM[0]+EXTRA_FIELDS));
-    close(SHM_D);
+    if (munmap(MEM, sizeof(pid_t)*(MEM[0]+EXTRA_FIELDS))) printf("atexit error: failed to unmap shared memory segment\n");
+    if (close(SHM_D)) printf("atexit error: failed to close shared memory descriptor\n");
 }
 
 void print_error(int error_code){
