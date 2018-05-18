@@ -141,7 +141,7 @@ int setup_sem(){
     if (semctl(SEM_ID, WAITING_ROOM_SEM, SETVAL, CHAIRS)) return -13;
     if (semctl(SEM_ID, BARBER_CHAIR_SEM, SETVAL, 0)) return -13;
     if (semctl(SEM_ID, DOOR_SEM, SETVAL, 0)) return -13;
-    if (semctl(SEM_ID, BARBER_STATE_SEM, SETVAL, 1)) return -13;
+    if (semctl(SEM_ID, BARBER_STATE_SEM, SETVAL, 0)) return -13;
     if (semctl(SEM_ID, NAP_SEM, SETVAL, 0)) return -13;
     if (semctl(SEM_ID, SYNC_SEM, SETVAL, 0)) return -13;
     for (int i = EXTRA_FIELDS; i < (CHAIRS + EXTRA_FIELDS); i++){
@@ -162,9 +162,9 @@ int serve_customer(int pid){
     if (release_lock(BARBER_CHAIR_SEM)) return -10;
     if (get_lock(SYNC_SEM)) return -10;
     if (print_log("Giving customer a haircut", pid)) return -9;
+    if (get_lock(BARBER_STATE_SEM)) return -10;    
     if (get_lock(SYNC_SEM)) return -10;
     if (print_log("Finished haircut", pid)) return -9;
-    if (get_lock(BARBER_STATE_SEM)) return -10;    
     if (release_lock(DOOR_SEM)) return -10;
     if (get_lock(SYNC_SEM)) return -10;
     return 0;
@@ -194,8 +194,6 @@ int take_a_nap(){
 int barber_shop(){
     int result;
     while(1){
-        if (release_lock(BARBER_STATE_SEM)) return -10;    
-        if (get_lock(BARBER_STATE_SEM)) return -10;
         if (semctl(SEM_ID, WAITING_ROOM_SEM, GETVAL, 0) == CHAIRS){
             if ((result = take_a_nap()) != 0) return result;
         }

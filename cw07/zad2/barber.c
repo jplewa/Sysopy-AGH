@@ -130,7 +130,7 @@ int setup_sem(){
     SEM[WAITING_ROOM_SEM] = sem_open(WAITING_ROOM_SEM_NAME, O_CREAT, 0777, CHAIRS);
     SEM[BARBER_CHAIR_SEM] = sem_open(BARBER_CHAIR_SEM_NAME, O_CREAT, 0777, 0);
     SEM[DOOR_SEM] = sem_open(DOOR_SEM_NAME, O_CREAT, 0777, 0);
-    SEM[BARBER_STATE_SEM] = sem_open(BARBER_STATE_SEM_NAME, O_CREAT, 0777, 1);
+    SEM[BARBER_STATE_SEM] = sem_open(BARBER_STATE_SEM_NAME, O_CREAT, 0777, 0);
     SEM[SYNC_SEM] = sem_open(SYNC_SEM_NAME, O_CREAT, 0777, 0);
     char* sem_name = malloc(128);
     for (int i = EXTRA_FIELDS; i < (CHAIRS + EXTRA_FIELDS); i++){
@@ -157,9 +157,9 @@ int serve_customer(int pid){
     if (release_lock(BARBER_CHAIR_SEM)) return -10;
     if (get_lock(SYNC_SEM)) return -10;
     if (print_log("Giving customer a haircut", pid)) return -9;
+    if (get_lock(BARBER_STATE_SEM)) return -10;    
     if (get_lock(SYNC_SEM)) return -10;
     if (print_log("Finished haircut", pid)) return -9;
-    if (get_lock(BARBER_STATE_SEM)) return -10;    
     if (release_lock(DOOR_SEM)) return -10;
     if (get_lock(SYNC_SEM)) return -10;
     return 0;
@@ -190,8 +190,6 @@ int barber_shop(){
     int result;
     int value;
     while(1){
-        if (release_lock(BARBER_STATE_SEM)) return -10;    
-        if (get_lock(BARBER_STATE_SEM)) return -10;
         if (sem_getvalue(SEM[WAITING_ROOM_SEM], &value)) return -5;
         if (value == CHAIRS){
             if ((result = take_a_nap()) != 0) return result;
