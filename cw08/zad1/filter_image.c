@@ -247,7 +247,7 @@ int save_out_image(){
 }
 
 void print_log(struct timespec before, struct timespec after){
-    printf("%dx%d\t\t%d\t\t%d\t\t%.9f s\n", W, H, C, THREADS, ((double)after.tv_sec + after.tv_nsec/1000000000.0) - ((double)before.tv_sec + before.tv_nsec/1000000000.0));    
+    printf("%dx%d\t\t%d\t\t%d\t\t\t%.9f s\n", W, H, C, THREADS, ((double)after.tv_sec + after.tv_nsec/1000000000.0) - ((double)before.tv_sec + before.tv_nsec/1000000000.0));    
 }
 
 int main(int argc, char* argv[]){
