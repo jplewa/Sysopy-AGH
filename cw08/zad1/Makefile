@@ -1,4 +1,4 @@
-CC = gcc -Wall -std=gnu99 -ggdb
+CC = gcc -Wall -std=gnu99
 LDLIBS = -lpthread -lm
 
 all:
