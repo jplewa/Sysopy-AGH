@@ -1,6 +1,8 @@
 #ifndef BARBER_SHOP_H
 #define BARBER_SHOP_H
 
+#define _GNU_SOURCE 1
+
 #include <sys/sem.h>
 #include <sys/ipc.h>
 #include <sys/types.h>
