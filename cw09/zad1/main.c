@@ -353,7 +353,8 @@ void* producer(void* args){
 }
 
 int create_threads(){
-    printf("index\twho\t\tmatch\t\tstring\n");
+    if (verbose) printf("index\twho\t\tmatch\t\tstring\n");
+    else printf("index\twho\t\tmatched string\n");
     for (int i = 0; i < P; i++){
         int* index = malloc(sizeof(int));
         *index = i;
