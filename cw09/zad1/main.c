@@ -43,10 +43,11 @@ void atexit2(){
     free(prod_buffer);
     free(cons_buffer);
 }
-
 void atexit3(){
     if(pthread_mutex_destroy(mutex)) printf("Error: couldn't destroy mutex\n");
     if(pthread_cond_destroy(wake_up)) printf("Error: couldn't destroy conditional variable\n");
+    free(mutex);
+    free(wake_up);
 }
 
 void print_error(int error_code){
@@ -100,14 +101,21 @@ int parse_number(FILE* args, int* var){
     char* buffer = NULL;
     char* pEnd;
     size_t n = 0;
-    if (getline(&buffer, &n, args) <= 0) return -3;
-    if ((*var = strtol(buffer, &pEnd, 10)) == 0) return -4;
-    else return 0;
+    if (getline(&buffer, &n, args) <= 0){
+        free(buffer);
+        return -3;
+    }
+    if ((*var = strtol(buffer, &pEnd, 10)) == 0){
+        free(buffer);
+        return -4;
+    }
+    free(buffer);
+    return 0;
 }
 
 int parse_arguments(int argc, char* argv[]){
     if (argc != 2) return -1;
-    FILE* args = malloc(sizeof(FILE));
+    FILE* args;
     if ((args = fopen(argv[1], "r")) == NULL) return -2;
     int result = 0;
     if ((result = parse_number(args, &P)) != 0){
@@ -124,7 +132,7 @@ int parse_arguments(int argc, char* argv[]){
     }
     char* buffer = NULL;
     size_t n = 0;
-    int chars;
+    int chars = 0;
     if ((chars = getline(&buffer, &n, args)) <= 0){
         if(fclose(args)) printf("Error: couldn't close configuration file\n");
         return -3;
@@ -167,6 +175,7 @@ int parse_arguments(int argc, char* argv[]){
     }
     nk = strtol(buffer, &pEnd, 10);
     if(fclose(args)) printf("Error: couldn't close configuration file\n");
+    free(buffer);
     return 0;
 }
 
@@ -325,30 +334,36 @@ void* producer(void* args){
 int create_threads(){
     if (verbose) printf("thread\t\taction\t\tindex\tmatch\tstring\n");
     else printf("thread\t\tindex\tmatched string\n");
+    int** index = malloc((P+K)*sizeof(int*));
     for (int i = 0; i < P; i++){
-        int* index = malloc(sizeof(int));
-        *index = i;
-        if (pthread_create(&(producers[i]), NULL, producer, (void*)index)) return -11;
+        index[i] = malloc(sizeof(int));
+        *(index[i]) = i;
+        if (pthread_create(&(producers[i]), NULL, producer, (void*)index[i])) return -11;
     }
     for (int i = 0; i < K; i++){
-        int* index = malloc(sizeof(int));
-        *index = i;
-        if (pthread_create(&(consumers[i]), NULL, consumer, (void*)index)) return -11;
+        index[P+i] = malloc(sizeof(int));
+        *(index[P+i]) = i;
+        if (pthread_create(&(consumers[i]), NULL, consumer, (void*)index[P+i])) return -11;
     }
     int result;
     result = exit_strategy();
-    void* ptr;
+    void* ptr = NULL;
     for (int i = 0; i < P; i++){
         if (pthread_join(producers[i], &ptr)) result = -13;
     }
     for (int i = 0; i < K; i++){
         if (pthread_join(consumers[i], &ptr)) result = -13;
     }
+    for (int i = 0; i < N; i++){
+        if (product_array[i] != NULL) free(product_array[i]);
+    }
+    for(int i = 0; i < P+K; i++) free(index[i]);
+    free(index);
     return result;
 }
 
 int main(int argc, char* argv[]){
-    int result;
+    int result = 0;
     if ((result = parse_arguments(argc, argv)) != 0) print_error(result);
     if ((result = initialize()) != 0) print_error(result);
     if ((result = create_threads()) != 0) print_error(result);
