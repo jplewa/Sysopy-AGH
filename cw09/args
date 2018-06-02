@@ -1,8 +1,8 @@
-10   # P
-10   # K
-100   # N
-../pan-tadeusz-czyli-ostatni-zajazd-na-litwie.txt
-30 # L   
-==
-quiet
-10
+1   # P
+1  # K
+100  # N
+../text1.txt
+6 # L   
+<=
+verbose
+1

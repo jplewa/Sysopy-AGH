@@ -19,13 +19,8 @@ char** product_array;
 
 int quit_flag;
 
-pthread_mutex_t* last_mutex;
-pthread_mutex_t* product_array_mutex;
-pthread_mutex_t* quit_mutex;
-pthread_mutex_t* file_mutex;
-
-pthread_cond_t* not_empty;
-pthread_cond_t* not_full;
+pthread_mutex_t* mutex;
+pthread_cond_t* wake_up;
 
 int LAST_PROD;
 int LAST_CONS;
@@ -50,12 +45,8 @@ void atexit2(){
 }
 
 void atexit3(){
-    if(pthread_mutex_destroy(last_mutex)) printf("Error: couldn't destroy mutex\n");
-    if(pthread_mutex_destroy(product_array_mutex)) printf("Error: couldn't destroy mutex\n");
-    if(pthread_mutex_destroy(quit_mutex)) printf("Error: couldn't destroy mutex\n");
-    if(pthread_mutex_destroy(file_mutex)) printf("Error: couldn't destroy mutex\n");
-    if(pthread_cond_destroy(not_empty)) printf("Error: couldn't destroy conditional variable\n");
-    if(pthread_cond_destroy(not_full)) printf("Error: couldn't destroy conditional variable\n");
+    if(pthread_mutex_destroy(mutex)) printf("Error: couldn't destroy mutex\n");
+    if(pthread_cond_destroy(wake_up)) printf("Error: couldn't destroy conditional variable\n");
 }
 
 void print_error(int error_code){
@@ -180,21 +171,11 @@ int parse_arguments(int argc, char* argv[]){
 }
 
 int initialize(){
-    last_mutex = malloc(sizeof(pthread_mutex_t));
-    product_array_mutex = malloc(sizeof(pthread_mutex_t));
-    quit_mutex = malloc(sizeof(pthread_mutex_t));
-    file_mutex = malloc(sizeof(pthread_mutex_t));
+    mutex = malloc(sizeof(pthread_mutex_t));
+    wake_up = malloc(sizeof(pthread_cond_t));
 
-    not_empty = malloc(sizeof(pthread_cond_t));
-    not_full = malloc(sizeof(pthread_cond_t));
-
-    if(pthread_mutex_init(last_mutex, NULL)) return -9;
-    if(pthread_mutex_init(product_array_mutex, NULL)) return -9;
-    if(pthread_mutex_init(quit_mutex, NULL)) return -9;
-    if(pthread_mutex_init(file_mutex, NULL)) return -9;
-    
-    if (pthread_cond_init(not_empty, NULL)) return -10;
-    if (pthread_cond_init(not_full, NULL)) return -10;
+    if(pthread_mutex_init(mutex, NULL)) return -9;   
+    if (pthread_cond_init(wake_up, NULL)) return -10;
 
     if(atexit(&atexit3)) return -8;
     
@@ -216,19 +197,11 @@ int initialize(){
 }
 
 void set_quit_flag(){
-    pthread_mutex_lock(quit_mutex);
     quit_flag = 1;
-    pthread_mutex_unlock(quit_mutex);
-    pthread_cond_broadcast(not_full);
-    pthread_cond_broadcast(not_empty); 
 }
 
 int quit(){
-    int tmp;
-    pthread_mutex_lock(quit_mutex);
-    tmp = quit_flag;
-    pthread_mutex_unlock(quit_mutex);
-    return tmp;
+    return quit_flag;
 }
 
 int exit_strategy(){
@@ -240,30 +213,39 @@ int exit_strategy(){
         sigemptyset(&set);
         sigaddset(&set, SIGINT);    
 
-        while ((sigtimedwait(&set, &info, &timeout) != SIGINT) && !quit()){}
-        set_quit_flag();
+        while ((sigtimedwait(&set, &info, &timeout) != SIGINT) && (!quit())){}
     }
-    else {
-        sleep(nk);
-        set_quit_flag();      
-    }
+    else sleep(nk);
+    pthread_mutex_lock(mutex);
+    set_quit_flag();
+    pthread_cond_broadcast(wake_up);
+    pthread_mutex_unlock(mutex);
     return 0;
+}
+
+int utf8_strlen(char* buffer){
+    int len = 0;
+    while(*buffer){
+        if ((*buffer & 0xC0) != 0x80) len++;
+        buffer++;
+    }
+    return len;
 }
 
 void consumer_log(char* buffer, int index, int id){
     if (verbose){
-        printf("%d\tCONSUMER #%d\t", index, id);        
-        if (((s_mode == 0) && (strlen(buffer) == L)) || ((s_mode != 0) && (((((int)strlen(buffer)) - L) * (int)s_mode) >= 0))){
-            printf("+\t\t%s\n", buffer);
-        }
-        else{
-            printf("-\n");
+        if (index == -1) printf("CONSUMER #%d\twaiting\n", id);        
+        else {
+            printf("CONSUMER #%d\treading\t\t%d\t", id, index);        
+            if (((s_mode == 0) && (utf8_strlen(buffer) == L)) || ((s_mode != 0) && ((((utf8_strlen(buffer)) - L) * (int)s_mode) >= 0))){
+                printf("🗸\t%s\n", buffer);
+            }
+            else printf("🞩\t%s\n", buffer);
         }
     }
-    else{
-        if (((s_mode == 0) && (strlen(buffer) == L)) || ((s_mode != 0) && (((((int)strlen(buffer)) - L) * (int)s_mode) >= 0))){
-            //printf("(%d - %d) * %d\n", strlen(buffer), L, s_mode);
-            printf("%d\tCONSUMER #%d\t%s\n", index, id, buffer);
+    else if (index >= 0){
+        if (((s_mode == 0) && (utf8_strlen(buffer) == L)) || ((s_mode != 0) && ((((utf8_strlen(buffer)) - L) * (int)s_mode) >= 0))){
+            printf("CONSUMER #%d\t%d\t%s\n", id, index, buffer);
         }
     }
     fflush(stdout);
@@ -271,90 +253,78 @@ void consumer_log(char* buffer, int index, int id){
 
 void producer_log(char* buffer, int index, int id){
     if (verbose){
-        printf("%d\tPRODUCER #%d\t\t\t%s\n", index, id, buffer);        
+        if (index >= 0) printf("PRODUCER #%d\twriting\t\t%d\t\t%s\n", id, index, buffer);        
+        else printf("PRODUCER #%d\twaiting\n", id);  
     }
     fflush(stdout);
 }
 
 void* consumer(void* args){
-    pthread_mutex_lock(last_mutex);
-    //printf("got mutex\n");
+    pthread_mutex_lock(mutex);
     while(!quit()){
-        //printf("inside loop\n");
         // to konsument dogonił producenta - tablica jest pusta
-        pthread_mutex_lock(product_array_mutex);
         if ((LAST_CONS == LAST_PROD) && (product_array[LAST_PROD] == NULL)) {
-            pthread_mutex_unlock(product_array_mutex);
-            //`printf("consumer waiting\n");
-            pthread_cond_wait(not_empty, last_mutex);
+            consumer_log(NULL, -1, *(int*)(args));
+            pthread_cond_wait(wake_up, mutex);
         } 
         else {
-            //printf("consumer reading\n");
             LAST_CONS = (LAST_CONS+1)%N;
             int index = LAST_CONS;
-            pthread_mutex_unlock(last_mutex);
-            //printf("before\n");
-            //printf("%d\n", strlen(product_array[index]));
-            //printf("after\n");
             strncpy(cons_buffer, product_array[index], 1+strlen(product_array[index]));
             consumer_log(cons_buffer, index, *(int*)(args));
             free(product_array[index]);
             product_array[index] = NULL;
-            if (((index-1+N)%N == LAST_PROD)){ //&& (product_array[(index-1+N)%N] != NULL) ) {
-                pthread_cond_broadcast(not_full);
+            // to producent dogonił konsumenta - tablica jest pełna
+            if (((index-1+N)%N == LAST_PROD)){
+                pthread_cond_broadcast(wake_up);
             }
-            pthread_mutex_unlock(product_array_mutex);
-            pthread_mutex_lock(last_mutex);
         }
+        pthread_mutex_unlock(mutex);
+        pthread_mutex_lock(mutex);
+
     }
-    pthread_mutex_unlock(last_mutex);
-    //printf("consumer exiting\n");
+    pthread_mutex_unlock(mutex);
     pthread_exit("Exit");
 }
 void* producer(void* args){
-    pthread_mutex_lock(last_mutex);
+    pthread_mutex_lock(mutex);
     while(!quit()){
         // to producent dogonił konsumenta - tablica jest pełna
-        pthread_mutex_lock(product_array_mutex);
         if ((LAST_CONS == LAST_PROD) && (product_array[LAST_PROD] != NULL)) {
-            pthread_mutex_unlock(product_array_mutex);
-            //printf("producer waiting\n");
-            pthread_cond_wait(not_full, last_mutex);
+            producer_log(NULL, -1, *(int*)(args));
+            pthread_cond_wait(wake_up, mutex);
         }
         else {
-            pthread_mutex_lock(file_mutex);
             int chars;
-            if ((chars = getline(&prod_buffer, &text_n, text)) < 0){
+            do {
+                if ((chars = getline(&prod_buffer, &text_n, text)) < 0) break;
+                if (prod_buffer[chars-1] == '\n') prod_buffer[chars-1] = '\0';
+            } while (strlen(prod_buffer) == 0);
+            if (chars < 0) {
                 if (nk == 0) set_quit_flag();
-                pthread_mutex_unlock(last_mutex);
             }
             else {
                 LAST_PROD = (LAST_PROD+1)%N;
                 int index = LAST_PROD;
-                pthread_mutex_unlock(last_mutex);
-                if (prod_buffer[chars-1] == '\n') prod_buffer[chars-1] = '\0';
                 product_array[index] = malloc(chars+1);
                 strncpy(product_array[index], prod_buffer, 1+chars);
                 producer_log(prod_buffer, index, *(int*)(args));
                 // to konsument dogonił producenta - tablica jest pusta
-                if ((LAST_CONS == (LAST_PROD-1+N)%N)){ //&& (product_array[(LAST_PROD-1+N)%N] == NULL) ) {
-                    //printf("Broadcasting\n");
-                    pthread_cond_broadcast(not_empty);
+                if ((LAST_CONS == (LAST_PROD-1+N)%N)){
+                    pthread_cond_broadcast(wake_up);
                 }
             }
-            pthread_mutex_unlock(product_array_mutex);
-            pthread_mutex_unlock(file_mutex);
-            pthread_mutex_lock(last_mutex);
+            pthread_mutex_unlock(mutex);
+            pthread_mutex_lock(mutex);
         }
     }
-    pthread_mutex_unlock(last_mutex);
-    //printf("producer exiting\n");
+    pthread_mutex_unlock(mutex);
     pthread_exit("Exit");
 }
 
 int create_threads(){
-    if (verbose) printf("index\twho\t\tmatch\t\tstring\n");
-    else printf("index\twho\t\tmatched string\n");
+    if (verbose) printf("thread\t\taction\t\tindex\tmatch\tstring\n");
+    else printf("thread\t\tindex\tmatched string\n");
     for (int i = 0; i < P; i++){
         int* index = malloc(sizeof(int));
         *index = i;
@@ -374,17 +344,13 @@ int create_threads(){
     for (int i = 0; i < K; i++){
         if (pthread_join(consumers[i], &ptr)) result = -13;
     }
-//    printf("Joined all\n");
     return result;
 }
 
 int main(int argc, char* argv[]){
-    printf("%d\n", (0%1));
     int result;
     if ((result = parse_arguments(argc, argv)) != 0) print_error(result);
     if ((result = initialize()) != 0) print_error(result);
     if ((result = create_threads()) != 0) print_error(result);
- //   printf("P: %d\nK: %d\nN: %d\nL: %d\nnk: %d\n%d\n%d\n", P,K,N,L,nk,(int)verbose,(int)s_mode);
-
     return 0;
 }
