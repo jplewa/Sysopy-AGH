@@ -1,8 +1,8 @@
 10   # P
 7    # K
-100  # N
+1  # N
 ../text1.txt
 6 # L   
 <=
-verbose
-0
+quiet
+1
