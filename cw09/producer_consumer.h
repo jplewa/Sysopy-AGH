@@ -20,18 +20,16 @@ char verbose;
 int nk;
 char** product_array;
 
+size_t buffer_size;
 char* prod_buffer;
 char* cons_buffer;
 
 pthread_t* consumers;
 pthread_t* producers;
 
-int quit_flag;
-
+int QUIT_FLAG;
 int LAST_PROD;
 int LAST_CONS;
-
-size_t text_n;
 
 int exit_strategy();
 void* consumer(void* args);

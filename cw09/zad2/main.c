@@ -96,7 +96,7 @@ void* producer(void* args){
         else {
             int chars;
             do {
-                if ((chars = getline(&prod_buffer, &text_n, text)) < 0) break;
+                if ((chars = getline(&prod_buffer, &buffer_size, text)) < 0) break;
                 if (prod_buffer[chars-1] == '\n') prod_buffer[chars-1] = '\0';
             } while (strlen(prod_buffer) == 0);
             if (chars < 0) {

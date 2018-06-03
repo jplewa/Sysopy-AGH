@@ -18,9 +18,9 @@ int initialize(){
     product_array = malloc(N*sizeof(char*));
     producers = malloc(P*sizeof(pthread_t));
     consumers = malloc(K*sizeof(pthread_t));
-    prod_buffer = malloc(1024);
-    cons_buffer = malloc(1024);
-    text_n = 1024;
+    buffer_size = 1024;
+    prod_buffer = malloc(buffer_size);
+    cons_buffer = malloc(buffer_size);
     if (atexit(&atexit2)) return -8;
 
     sigset_t set;
@@ -69,11 +69,11 @@ void producer_log(char* buffer, int index, int id){
 }
 
 void set_quit_flag(){
-    quit_flag = 1;
+    QUIT_FLAG = 1;
 }
 
 int quit(){
-    return quit_flag;
+    return QUIT_FLAG;
 }
 
 int create_threads(){
