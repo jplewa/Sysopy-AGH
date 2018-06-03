@@ -126,6 +126,7 @@ int parse_image_header(){
         printf("Requested number of threads is larger than image width.\n%d threads will be used instead.\n", W);
         THREADS = W;
     }
+    free(lineptr);
     return 0;
 }
 
@@ -134,12 +135,14 @@ int parse_image(){
     char* lineptr = NULL;
     size_t n;
     image_in = malloc((H+1) * sizeof(unsigned char *));
+    image_in[0] = NULL;
     for (int i = 1; i <= H; i++) image_in[i] = malloc((W+1) * sizeof(unsigned char));
     image_out = malloc((H+1) * sizeof(unsigned char *));
+    image_out[0] = NULL;
     for (int i = 1; i <= H; i++) image_out[i] = malloc((W+1) * sizeof(unsigned char));
     if (atexit(&atexit4)) return -2;
     char* c;
-    char* buffer = malloc(4*sizeof(char));
+    char* buffer;
     int i = 0;
     long int tmp = 0;
     while (((getline(&lineptr, &n, IMAGE_IN)) > 0) && (errno == 0)){
@@ -152,6 +155,7 @@ int parse_image(){
             }
         }
     }
+    free(lineptr);
     free(buffer);
     if (i != H*W) return -4;
     return 0;
@@ -163,11 +167,12 @@ int parse_filter(){
     if ((getline(&lineptr, &n, FILTER) <= 0)) return -3;
     char* pEnd;
     if ((C =  strtol (lineptr, &pEnd, 10)) <= 0) return -4;
-    filter = malloc((C+1) * sizeof(float*));
+    filter = (float**) malloc((C+1) * sizeof(float*));
+    filter[0] = NULL;
     for (int i = 1; i <= C; i++) filter[i] = malloc((C+1) * (sizeof(float)));
     if (atexit(&atexit5)) return -2;
     char* c;
-    char* buffer = malloc(33*sizeof(char));
+    char* buffer;
     int i = 0;
     while (((getline(&lineptr, &n, FILTER)) > 0) && (errno == 0)){
         if (strncmp(lineptr, "#", 1) != 0){
@@ -178,6 +183,7 @@ int parse_filter(){
             }
         }
     }
+    free(lineptr);
     free(buffer);
     if (i != C*C) return -5;
     float sum = 0;
@@ -218,17 +224,19 @@ void* filter_function(void* args){
 int filter_image(){
     int result = 0;
     pthread_t* threads = malloc((THREADS+1) * sizeof(pthread_t));
+    int** index = malloc((THREADS+1)*sizeof(int*));
     for (int i = 1; i <= THREADS; i++){
-        int* index = malloc(sizeof(int));
-        index[0] = i;
-        if (pthread_create(&(threads[i]), NULL, filter_function, (void*)(index))) result = -6;
+        index[i] = malloc(sizeof(int));
+        *(index[i]) = i;
+        if (pthread_create(&(threads[i]), NULL, filter_function, (void*)(index[i]))) result = -6;
     }
     void* ptr;
     for (int i = 1; i <= THREADS; i++){
         if (pthread_join(threads[i], &ptr)) result = -7;
-
+        free(index[i]);
     }
     free(threads);
+    free(index);
     return result;  
 }
 
