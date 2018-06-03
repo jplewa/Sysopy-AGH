@@ -38,12 +38,16 @@ void* consumer(void* args);
 void* producer(void* args);
 void atexit1();
 void atexit2();
+void atexit3();
+int initialize();
 int utf8_strlen(char* buffer);
 void consumer_log(char* buffer, int index, int id);
 void producer_log(char* buffer, int index, int id);
+void set_quit_flag();
+int quit();
 int create_threads();
 int parse_number(FILE* args, int* var);
-int parse_arguments(int argc, char* argv[]);
+int parse_configuration(int argc, char* argv[]);
 void print_error(int error_code);
 
 #endif

@@ -12,38 +12,16 @@ void atexit3(){
     free(wake_up);
 }
 
-int initialize(){
+int mutex_initialize(){
     mutex = malloc(sizeof(pthread_mutex_t));
-    wake_up = malloc(sizeof(pthread_cond_t));
-
     if(pthread_mutex_init(mutex, NULL)) return -9;   
-    if (pthread_cond_init(wake_up, NULL)) return -10;
-
-    if(atexit(&atexit3)) return -8;
-    
-    product_array = malloc(N*sizeof(char*));
-    producers = malloc(P*sizeof(pthread_t));
-    consumers = malloc(K*sizeof(pthread_t));
-    prod_buffer = malloc(1024);
-    cons_buffer = malloc(1024);
-    text_n = 1024;
-    if (atexit(&atexit2)) return -8;
-
-    sigset_t set;
-    if (sigfillset(&set)) return -12;
-    if (sigprocmask(SIG_BLOCK, &set, NULL)) return -12;
-    LAST_CONS = N-1;
-    LAST_PROD = N-1;
-    for (int i = 0; i < N; i++) product_array[i] = NULL;
     return 0;
 }
 
-void set_quit_flag(){
-    quit_flag = 1;
-}
-
-int quit(){
-    return quit_flag;
+int cond_initialize(){
+    wake_up = malloc(sizeof(pthread_cond_t));
+    if (pthread_cond_init(wake_up, NULL)) return -10;
+    return 0;
 }
 
 int exit_strategy(){
@@ -131,7 +109,9 @@ void* producer(void* args){
 
 int main(int argc, char* argv[]){
     int result = 0;
-    if ((result = parse_arguments(argc, argv)) != 0) print_error(result);
+    if ((result = parse_configuration(argc, argv)) != 0) print_error(result);
+    if ((result = mutex_initialize()) != 0) print_error(result);
+    if ((result = cond_initialize()) != 0) print_error(result);
     if ((result = initialize()) != 0) print_error(result);
     if ((result = create_threads()) != 0) print_error(result);
     return 0;

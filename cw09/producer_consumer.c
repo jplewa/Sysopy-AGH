@@ -10,7 +10,26 @@ void atexit2(){
     free(consumers);
     free(prod_buffer);
     free(cons_buffer);
+}
 
+int initialize(){
+    if(atexit(&atexit3)) return -8;
+    
+    product_array = malloc(N*sizeof(char*));
+    producers = malloc(P*sizeof(pthread_t));
+    consumers = malloc(K*sizeof(pthread_t));
+    prod_buffer = malloc(1024);
+    cons_buffer = malloc(1024);
+    text_n = 1024;
+    if (atexit(&atexit2)) return -8;
+
+    sigset_t set;
+    if (sigfillset(&set)) return -12;
+    if (sigprocmask(SIG_BLOCK, &set, NULL)) return -12;
+    LAST_CONS = N-1;
+    LAST_PROD = N-1;
+    for (int i = 0; i < N; i++) product_array[i] = NULL;
+    return 0;
 }
 
 int utf8_strlen(char* buffer){
@@ -47,6 +66,14 @@ void producer_log(char* buffer, int index, int id){
         else printf("PRODUCER #%d\twaiting\n", id);  
     }
     fflush(stdout);
+}
+
+void set_quit_flag(){
+    quit_flag = 1;
+}
+
+int quit(){
+    return quit_flag;
 }
 
 int create_threads(){
@@ -96,7 +123,7 @@ int parse_number(FILE* args, int* var){
     return 0;
 }
 
-int parse_arguments(int argc, char* argv[]){
+int parse_configuration(int argc, char* argv[]){
     if (argc != 2) return -1;
     FILE* args;
     if ((args = fopen(argv[1], "r")) == NULL) return -2;

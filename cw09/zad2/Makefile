@@ -13,4 +13,4 @@ clean:
 	rm -f ../*.o
 
 tests:
-	./program ../args
+	./program ../configuration.txt
