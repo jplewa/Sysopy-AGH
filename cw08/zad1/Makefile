@@ -3,8 +3,8 @@ LDLIBS = -lpthread -lm
 
 all:
 	$(CC) filter_image.c -o filter_image $(LDLIBS)
-	make tests
 	make clean
+	make tests
 
 clean:
 	rm -f *.o
