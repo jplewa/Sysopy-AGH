@@ -12,6 +12,7 @@ void atexit1(){
     for (int i = 0; i < EXTRA_FIELDS; i++){
         if (sem_close(SEM[i])) printf("atexit error: failed to close semaphore\n");
     }
+    free(SEM);
 }
 
 void atexit2(){
@@ -103,6 +104,7 @@ int setup_sem(){
     for (int i = 0; i < (MEM[SEATS_MEM] + EXTRA_FIELDS); i++){
         if (SEM[i] == SEM_FAILED) return -13;
     }
+    free(sem_name);
     return 0;
 }
 
