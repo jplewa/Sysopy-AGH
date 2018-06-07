@@ -110,6 +110,7 @@ void* producer(void* args){
                 producer_log(prod_buffer, index, *(int*)(args));
                 // to konsument dogonił producenta - tablica była pusta
                 if ((LAST_CONS == (LAST_PROD-1+N)%N)){
+                    consumer_log(NULL, -2, *(int*)(args));
                     while (c_waiting){
                         sem_post(not_empty);
                         c_waiting--;

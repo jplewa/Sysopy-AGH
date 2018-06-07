@@ -60,6 +60,7 @@ void* consumer(void* args){
             product_array[index] = NULL;
             // to producent dogonił konsumenta - tablica jest pełna
             if (((index-1+N)%N == LAST_PROD)){
+                consumer_log(NULL, -2, *(int*)(args));
                 pthread_cond_broadcast(wake_up);
             }
         }

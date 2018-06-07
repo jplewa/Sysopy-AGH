@@ -43,9 +43,10 @@ int utf8_strlen(char* buffer){
 
 void consumer_log(char* buffer, int index, int id){
     if (verbose){
-        if (index == -1) printf("CONSUMER #%d\twaiting\n", id);        
+        if (index == -1) printf("CONSUMER #%d\twait\n", id);  
+        else if (index == -2) printf("CONSUMER #%d\tbroadcast\n", id);        
         else {
-            printf("CONSUMER #%d\treading\t\t%d\t", id, index);        
+            printf("CONSUMER #%d\tread\t\t[%d]\t", id, index);        
             if (((s_mode == 0) && (utf8_strlen(buffer) == L)) || ((s_mode != 0) && ((((utf8_strlen(buffer)) - L) * (int)s_mode) >= 0))){
                 printf("🗸\t%s\n", buffer);
             }
@@ -62,8 +63,9 @@ void consumer_log(char* buffer, int index, int id){
 
 void producer_log(char* buffer, int index, int id){
     if (verbose){
-        if (index >= 0) printf("PRODUCER #%d\twriting\t\t%d\t\t%s\n", id, index, buffer);        
-        else printf("PRODUCER #%d\twaiting\n", id);  
+        if (index >= 0) printf("PRODUCER #%d\twrite\t\t[%d]\t\t%s\n", id, index, buffer);        
+        else if (index == -1) printf("PRODUCER #%d\twait\n", id);  
+        else if (index == -2) printf("PRODUCER #%d\tbroadcast\n", id);  
     }
     fflush(stdout);
 }
