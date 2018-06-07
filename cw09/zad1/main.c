@@ -97,6 +97,7 @@ void* producer(void* args){
                 producer_log(prod_buffer, index, *(int*)(args));
                 // to konsument dogonił producenta - tablica jest pusta
                 if ((LAST_CONS == (LAST_PROD-1+N)%N)){
+                    producer_log(NULL, -2, *(int*)(args));
                     pthread_cond_broadcast(wake_up);
                 }
             }

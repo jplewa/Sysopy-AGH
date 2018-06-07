@@ -5,30 +5,70 @@
 #include <semaphore.h>
 
 sem_t* mutex;
-sem_t* not_empty;
-sem_t* not_full;
 
-int c_waiting;
-int p_waiting;
+sem_t** not_empty;
+sem_t** not_full;
+
+int* c_waiting;
+int* p_waiting;
 
 void atexit3(){
     if (sem_destroy(mutex)) printf("Error: couldn't destroy semaphore\n");
-    if (sem_destroy(not_empty)) printf("Error: couldn't destroy semaphore\n");
-    if (sem_destroy(not_full)) printf("Error: couldn't destroy semaphore\n");
+    for (int i = 0; i < P; i++){
+        if (sem_destroy(not_full[i])) printf("Error: couldn't destroy semaphore\n");
+        free(not_full[i]);
+        
+    }
+    for (int i = 0; i < K; i++){
+        if (sem_destroy(not_empty[i])) printf("Error: couldn't destroy semaphore\n");
+        free(not_empty[i]);
+    }
     free(mutex);
+    free(p_waiting);
+    free(c_waiting);
     free(not_empty);
     free(not_full);
 }
 
 int sem_initialize(){
     mutex = malloc(sizeof(sem_t));
-    not_empty = malloc(sizeof(sem_t));
-    not_full = malloc(sizeof(sem_t));
 
+    not_empty = malloc(K*sizeof(sem_t*));
+    not_full = malloc(P*sizeof(sem_t*));
+    
+    p_waiting = malloc(P*sizeof(int));
+    c_waiting = malloc(K*sizeof(int));
+
+    for (int i = 0; i < P; i++){
+        not_full[i] = malloc(sizeof(sem_t));
+        if (sem_init(not_full[i], 0, 0)) return -11;
+        p_waiting[i] = 0;
+    }
+    for (int i = 0; i < K; i++){
+        not_empty[i] = malloc(sizeof(sem_t));
+        if (sem_init(not_empty[i], 0, 0)) return -11;
+        c_waiting[i] = 0;
+    }
     if (sem_init(mutex, 0, 1)) return -11;
-    if (sem_init(not_empty, 0, 0)) return -11;
-    if (sem_init(not_full, 0, 0)) return -11;
     return 0;
+}
+
+void broadcast_not_full(){
+    for (int i = 0; i < P; i++){
+        if (p_waiting[i]){
+            sem_post(not_full[i]);
+            p_waiting[i] = 0;
+        }
+    }
+}
+
+void broadcast_not_empty(){
+    for (int i = 0; i < K; i++){
+        if (c_waiting[i]){
+            sem_post(not_empty[i]);
+            c_waiting[i] = 0;
+        }
+    }
 }
 
 int exit_strategy(){
@@ -45,8 +85,8 @@ int exit_strategy(){
     else sleep(nk);
     sem_wait(mutex);
     set_quit_flag();
-    for (int i = 0; i < p_waiting; i++) sem_post(not_full);
-    for (int i = 0; i < c_waiting; i++) sem_post(not_empty);
+    broadcast_not_empty();
+    broadcast_not_full();
     sem_post(mutex);
     return 0;
 }
@@ -56,10 +96,10 @@ void* consumer(void* args){
     while(!quit()){
         // to konsument dogonił producenta - tablica jest pusta
         if ((LAST_CONS == LAST_PROD) && (product_array[LAST_PROD] == NULL)) {
-            c_waiting++;
             consumer_log(NULL, -1, *(int*)(args));
+            c_waiting[*(int*)(args)] = 1;
             sem_post(mutex);
-            sem_wait(not_empty);
+            sem_wait(not_empty[*(int*)(args)]);
         } 
         else {
             LAST_CONS = (LAST_CONS+1)%N;
@@ -70,10 +110,8 @@ void* consumer(void* args){
             product_array[index] = NULL;
             // to producent dogonił konsumenta - tablica jest pełna
             if (((index-1+N)%N == LAST_PROD)){
-                while (p_waiting){
-                    sem_post(not_full);
-                    p_waiting--;
-                }
+                consumer_log(NULL, -2, *(int*)(args));
+                broadcast_not_full();
             }
             sem_post(mutex);
         }
@@ -88,10 +126,10 @@ void* producer(void* args){
     while(!quit()){
         // to producent dogonił konsumenta - tablica jest pełna
         if ((LAST_CONS == LAST_PROD) && (product_array[LAST_PROD] != NULL)) {
-            p_waiting++;
             producer_log(NULL, -1, *(int*)(args));
+            p_waiting[*(int*)(args)] = 1;
             sem_post(mutex);
-            sem_wait(not_full);
+            sem_wait(not_full[*(int*)(args)]);
         }
         else {
             int chars;
@@ -110,11 +148,8 @@ void* producer(void* args){
                 producer_log(prod_buffer, index, *(int*)(args));
                 // to konsument dogonił producenta - tablica była pusta
                 if ((LAST_CONS == (LAST_PROD-1+N)%N)){
-                    consumer_log(NULL, -2, *(int*)(args));
-                    while (c_waiting){
-                        sem_post(not_empty);
-                        c_waiting--;
-                    }
+                    producer_log(NULL, -2, *(int*)(args));
+                    broadcast_not_empty();
                 }
             }
             sem_post(mutex);
