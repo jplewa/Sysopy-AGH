@@ -6,18 +6,16 @@
 
 sem_t* mutex;
 
-sem_t** not_empty;
-sem_t** not_full;
-
-int* c_waiting;
+sem_t** not_empty;      // semaphores for producers and consumers have been added to implement
+sem_t** not_full;       // a solution equivalent to the mutex-based solution
+int* c_waiting;         // these arrays allowed me to implement a broadcast function
 int* p_waiting;
 
 void atexit3(){
     if (sem_destroy(mutex)) printf("Error: couldn't destroy semaphore\n");
     for (int i = 0; i < P; i++){
         if (sem_destroy(not_full[i])) printf("Error: couldn't destroy semaphore\n");
-        free(not_full[i]);
-        
+        free(not_full[i]);        
     }
     for (int i = 0; i < K; i++){
         if (sem_destroy(not_empty[i])) printf("Error: couldn't destroy semaphore\n");
