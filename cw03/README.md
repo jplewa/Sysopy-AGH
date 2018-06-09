@@ -31,6 +31,6 @@ Zmodyfikuj program z Zadania 2 tak, aby każde polecenie wykonywane przez interp
 
 Zaimplementuj w interpreterze raportowanie zużycia zasobów systemowych dla każdego wykonywanego polecenia (a więc linii pliku wsadowego). Interpreter powinien w szczególności raportować czas użytkownika i czas systemowy. Realizując tą część zadania zwróć uwagę na funkcję getrusage i flagę RUSAGE_CHILDREN.
 
-#### b) 10%
+#### b) (10%)
 
 Na potrzeby demonstracji zadania napisz prosty program, który przekracza narzucone limity na zasoby systemowe. Program może np. wykonywać  pętlę nieskończoną lub alokować (i zapisywać) znaczną ilość pamięci operacyjnej.
