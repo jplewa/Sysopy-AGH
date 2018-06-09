@@ -1,17 +1,17 @@
-Zadania - Zestaw 6
-IPC - kolejki komunikatów
+#Zadania - Zestaw 6
+##IPC - kolejki komunikatów
 
-Przydatne funkcje:
+###Przydatne funkcje:
 
-System V:
+####System V:
 
 <sys/msg.h> <sys/ipc.h> - msgget, msgctl, msgsnd, msgrcv, ftok
 
-POSIX:
+####POSIX:
 
 <mqueue.h> - mq_open, mq_send, mq_receive, mq_getattr, mq_setattr, mq_close, mq_unlink, mq_notify
 
-Zadanie 1. System V (50%)
+###Zadanie 1. System V (50%)
 
 Napisz prosty program typu klient-serwer, w którym komunikacja zrealizowana jest za pomocą kolejek komunikatów - jedna, na zlecenia klientów dla serwera, druga, prywatna, na odpowiedzi.
 
@@ -35,7 +35,7 @@ Poszczególne rodzaje komunikatów należy identyfikować za pomocą typów komu
 Klient i serwer należy napisać w postaci osobnych programów (nie korzystamy z funkcji fork). Serwer musi być w stanie pracować z wieloma klientami naraz. Przed zakończeniem pracy każdy proces powinien usunąć kolejkę którą utworzył (patrz IPC_RMID oraz funkcja atexit). Dla uproszczenia można przyjąć, że serwer przechowuje informacje o klientach w statycznej tablicy (rozmiar tablicy ogranicza liczbę klientów, którzy mogą się zgłosić do serwera).
 Nalezy obsłużyć przerwanie działania serwera lub klienta za pomocą CTRL+C. W przypadku klienta, można zdefiniować dodatkowy typ komunikatu STOP, który wysyła klient, kiedy kończy pracę, aby serwer mógł skasowac jego kolejkę.
 
-Zadanie 2. POSIX (50%)
+###Zadanie 2. POSIX (50%)
 
 Zrealizuj zadanie analogiczne do Zadania 1, wykorzystując kolejki komunikatów POSIX.
 
