@@ -25,9 +25,12 @@ Sortowanie i kopiowanie powinno być zaimplementowane w dwóch wariantach:
 - ``lib`` - przy użyciu funkcji biblioteki C: fread i fwrite
 
 Rodzaj operacji oraz sposób dostępu do plików ma być wybierany na podstawie argumentu wywołania - np.:
-``./program generate dane 100 512`` powinno losowo generować 100 rekordów o długości 512 bajtów do pliku dane,
-``./program sort dane 100 512 sys`` powinien sortować rekordy w pliku dane przy użyciu funkcji systemowych, zakładając że zawiera on 100 rekordów wielkości 512 bajtów
-``./program copy plik1 plik2 100 512 sys`` powinno skopiować 100 rekordów pliku 1 do pliku 2 za pomocą funkcji bibliotecznych z wykorzystaniem bufora 512 bajtów
+
+- ``./program generate dane 100 512`` powinno losowo generować 100 rekordów o długości 512 bajtów do pliku dane,
+
+- ``./program sort dane 100 512 sys`` powinien sortować rekordy w pliku dane przy użyciu funkcji systemowych, zakładając że zawiera on 100 rekordów wielkości 512 bajtów
+
+- ``./program copy plik1 plik2 100 512 sys`` powinno skopiować 100 rekordów pliku 1 do pliku 2 za pomocą funkcji bibliotecznych z wykorzystaniem bufora 512 bajtów
 
 #### b) (25%) 
 
