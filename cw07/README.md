@@ -1,16 +1,18 @@
-#Zadania - Zestaw 7
-##IPC - pamieć wspólna, semafory
-####Przydatne funkcje
+# Zadania - Zestaw 7
 
-#####System V:
+## IPC - pamieć wspólna, semafory
+
+#### Przydatne funkcje
+
+##### System V
 
 <sys/shm.h> <sys/ipc.h> - shmget, shmclt, shmat, shmdt
 
-#####POSIX:
+##### POSIX
 
 <sys/mman.h> - shm_open, shm_close, shm_unlink, mmap, munmap
 
-###Problem synchronizacyjny śpiącego golibrody z kolejką
+### Problem synchronizacyjny śpiącego golibrody z kolejką
 
 W ramach ćwiczenia 7 należy zaimplementować prawidłowe rozwiązanie problemu śpiącego golibrody z kolejką. Golibroda prowadzi zakład fryzjerski z jednym krzesłem w gabinecie (na którym strzyże klientów) i N krzesłami w poczekalni. Zakład działa według następującego schematu:
 
@@ -56,10 +58,10 @@ Niedopuszczalne jest również zasypianie procesów klientów lub golibrody funk
 
 Szeregowanie klientów do strzyżenia należy zaimplementować w postaci kolejki FIFO w pamięci wspólnej. W pamięci wspólnej można również przechowywać inne niezbędne zmienne (np. zmienną zliczającą klientów oczekujących w poczekalni, flagę wskazującą czy golibroda śpi, etc.). Odpowiednie zasoby do synchronizacji i komunikacji powinny być tworzone przez proces golibrody. Proces ten jest również odpowiedzialny za usunięcie tych zasobów z systemu (przed zakończeniem pracy).
 
-###Zadanie 1
+### Zadanie 1
 
 Zaimplementuj opisany powyżej problem synchronizacyjny wykorzystując semafory i pamięć wspólną z IPC Systemu V.
 
-###Zadanie 2.
+### Zadanie 2
 
 Zaimplementuj opisany powyżej problem synchronizacyjny wykorzystując semafory i pamięć wspólną z IPC POSIX.
