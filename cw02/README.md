@@ -1,9 +1,11 @@
 # Zadania - zestaw 2
 
-#### Zapoznaj się ze składnią i operacjami wykonywanymi przez poniższe funkcje:
+### Zapoznaj się ze składnią i operacjami wykonywanymi przez poniższe funkcje
 
-    funkcje operujące na plikach i katalogach: open, close, read, write, fcntl, stat, fstat, lstat, mkdir, rmdir, opendir, closedir, readdir, rewinddir, nftw, fopen, fclose, getc, putc,
-    funkcje i zmienne do obsługi błędów: perror, errno.
+#### funkcje operujące na plikach i katalogach
+open, close, read, write, fcntl, stat, fstat, lstat, mkdir, rmdir, opendir, closedir, readdir, rewinddir, nftw, fopen, fclose, getc, putc,
+#### funkcje i zmienne do obsługi błędów
+perror, errno.
 
 ### Zadanie 1. Porównanie wydajności systemowych i bibliotecznych funkcji we/wy (55%)
 
