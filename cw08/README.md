@@ -10,8 +10,10 @@ Operacja filtrowania tworzy nowy obraz J, którego piksele mają wartość:
 
 J[x,y]=round(s<sub>x,y</sub>),
 s<sub>x,y</sub>=∑<sup>c</sup><sub>i=1</sub>∑cj=1I[max{1,x−ceil(c/2)+i},max{1,y−ceil(c/2)+j}]∗k[i,j]
+
+
 \sum_{i=1}^{10} t_i
-.
+
 
 Operacja  round()
   oznacza zaokrąglenie do najbliższej liczby całkowitej a ceil()
