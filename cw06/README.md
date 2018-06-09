@@ -22,15 +22,10 @@ Klient bezpośrednio po uruchomieniu tworzy kolejkę z unikalnym kluczem IPC  i 
 
 Rodzaje zleceń
 
-    Usługa lustra (MIRROR):
-    Klient wysyła ciąg znaków. Serwer odsyła ten sam ciąg z powrotem w odwrotnej kolejności. Klient po odebraniu wysyła go na standardowe wyjście.
-    Usługa kalkulatora (CALC):
-    Klient wysyła proste działanie arytmetyczne (+ - * /) Serwer oblicza i odsyła wynik. Klient po odebraniu wysyła go na standardowe wyjście. Działania można przesyłać w postaci np CALC 2+3, CALC 3*4 albo ADD 1 2, MUL 3 4, SUB 5 4, DIV 4 3 - wariant do wyboru.
-    Usługa czasu (TIME):
-    Po odebraniu takiego zlecenia serwer wysyła do klienta datę i godzinę w postaci łańcucha znaków. Klient po odebraniu informacji wysyła ją na standardowe wyjście.
-    Nakaz zakończenia (END):
-    Po odebraniu takiego zlecenia serwer zakończy działanie, jak tylko opróżni się kolejka zleceń (zostaną wykonane wszystkie pozostałe zlecenia).
-    Klient nie czeka na odpowiedź.
+- ``Usługa lustra (MIRROR)``: Klient wysyła ciąg znaków. Serwer odsyła ten sam ciąg z powrotem w odwrotnej kolejności. Klient po odebraniu wysyła go na standardowe wyjście.
+- ``Usługa kalkulatora (CALC)``: Klient wysyła proste działanie arytmetyczne (+ - * /) Serwer oblicza i odsyła wynik. Klient po odebraniu wysyła go na standardowe wyjście. Działania można przesyłać w postaci np CALC 2+3, CALC 3*4 albo ADD 1 2, MUL 3 4, SUB 5 4, DIV 4 3 - wariant do wyboru.
+- ``Usługa czasu (TIME)``: Po odebraniu takiego zlecenia serwer wysyła do klienta datę i godzinę w postaci łańcucha znaków. Klient po odebraniu informacji wysyła ją na standardowe wyjście.
+- ``Nakaz zakończenia (END)``: Po odebraniu takiego zlecenia serwer zakończy działanie, jak tylko opróżni się kolejka zleceń (zostaną wykonane wszystkie pozostałe zlecenia). Klient nie czeka na odpowiedź.
 
 Poszczególne rodzaje komunikatów należy identyfikować za pomocą typów komunikatów systemu V. Klucze dla kolejek mają być generowane na podstawie ścieżki $HOME. Małe liczby do wygenerowania kluczy oraz rodzaje komunikatów mają być zdefiniowane we wspólnym pliku nagłówkowym. Dla uproszczenia można założyć, że długość komunikatu (lub maksymalna długość łańcucha znaków przy usłudze lustra) jest ograniczona pewną stałą (jej definicja powinna znaleźć się w pliku nagłówkowym).
 Klient i serwer należy napisać w postaci osobnych programów (nie korzystamy z funkcji fork). Serwer musi być w stanie pracować z wieloma klientami naraz. Przed zakończeniem pracy każdy proces powinien usunąć kolejkę którą utworzył (patrz IPC_RMID oraz funkcja atexit). Dla uproszczenia można przyjąć, że serwer przechowuje informacje o klientach w statycznej tablicy (rozmiar tablicy ogranicza liczbę klientów, którzy mogą się zgłosić do serwera).
